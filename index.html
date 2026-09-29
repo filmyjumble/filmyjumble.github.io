@@ -33,6 +33,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 /* Home */
 .brand{font-family:"Rozha One",Georgia,serif;font-weight:400;color:var(--gold);line-height:.95;margin:28px 0 4px;font-size:clamp(3rem,15vw,4.6rem)}
 .brand-ml{color:var(--muted);font-size:1.15rem;margin:0 0 28px}
+.playcount{color:var(--gold);font-size:.95rem;margin:-18px 0 22px;font-weight:700}
 .daily{display:block;width:100%;text-align:left;background:var(--gold);color:#1B1B17;border:none;border-radius:16px;padding:18px 20px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.28)}
 .daily:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
 .daily strong{display:block;font-family:"Rozha One",serif;font-weight:400;font-size:1.6rem;line-height:1.1}
@@ -143,6 +144,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 <section id="home">
   <h1 class="brand">Filmy Jumble</h1>
   <p class="brand-ml">Movie titles, all mixed up. Malayalam, Tamil, Telugu, Hindi and English.</p>
+  <p class="playcount" id="playCount" hidden></p>
   <button class="daily" id="dailyBtn"><strong id="dailyTitle">Today's five</strong><span id="dailySub">One film from each language, the same for everyone.</span></button>
   <div class="levels">
     <button class="level" data-mode="easy"><strong>Easy</strong><span>short, well-known</span></button>
@@ -361,6 +363,27 @@ function beep(f,d,type){if(!opts.sound)return;try{actx=actx||new (window.AudioCo
 function buzz(p){if(opts.sound&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
 function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove("show"),1800)}
 
+/* anonymous play counter: sends only "+1", no ids or scores */
+const COUNTER="https://abacus.jasoncameron.dev",CNS="filmyjumble-app";
+const canCount=()=>ON_SITE||STANDALONE;
+function hit(key){try{fetch(`${COUNTER}/hit/${CNS}/${key}`).catch(()=>{})}catch(e){}}
+let countAt=0;
+async function showCount(){
+  if(!canCount()||Date.now()-countAt<60000)return;countAt=Date.now();
+  try{
+    const [g,p]=await Promise.all(["games","players"].map(k=>fetch(`${COUNTER}/get/${CNS}/${k}`).then(r=>r.ok?r.json():null).catch(()=>null)));
+    if(!g||typeof g.value!=="number"||g.value<1)return;
+    const pv=p&&typeof p.value==="number"?p.value:0,el=$("playCount");
+    el.textContent=`🎬 ${g.value.toLocaleString()} game${g.value===1?"":"s"} played by ${pv.toLocaleString()} player${pv===1?"":"s"}`;
+    el.hidden=false;
+  }catch(e){}
+}
+function countGame(){
+  if(!canCount())return;
+  hit("games");
+  if(!get("counted",false)){put("counted",true);hit("players")}
+  countAt=0;
+}
 /* screens */
 function show(id){["home","play","result"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0)}
 function refreshHome(){
@@ -383,6 +406,7 @@ function refreshHome(){
   $("langCount").textContent=`${n.toLocaleString()} films`;
   $("deepBtn").hidden=pool("deep").length<10;
   setBg(opts.langs);
+  showCount();
 }
 
 /* game */
@@ -534,7 +558,7 @@ function endGame(){
     stats.dStreak=stats.dLast===ys?stats.dStreak+1:1;stats.dLast=t;
     put("daily_"+t,res);
   }
-  put("stats",stats);cur=null;showResult(res,false);
+  put("stats",stats);countGame();cur=null;showResult(res,false);
 }
 function shareText(res){
   const head=res.mode==="daily"?`Filmy Jumble #${dayNo(res.date)}`:`Filmy Jumble (${LABEL[res.mode]})`;
