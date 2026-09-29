@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F3B34">
+<meta name="description" content="Filmy Jumble: unscramble movie titles from Malayalam, Tamil, Telugu, Hindi and English cinema.">
+<title>Filmy Jumble</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0F3B34;--panel:#154840;--gold:#D8A93A;--paper:#F3EEDC;--ink:#1B1B17;
+  --muted:#A9BFB6;--red:#D2454E;--ok:#4FAE68;--slot:#0B2E28;--scrim:rgba(4,20,17,.72);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){--bg:#F3EEDC;--panel:#E7DFC5;--gold:#9A6B08;--paper:#1B1B17;--ink:#F3EEDC;--muted:#5E6B63;--slot:#DCD3B6;--ok:#2E8B4A;--red:#C0343F;--scrim:rgba(40,35,20,.45)}
+}
+:root[data-theme="light"]{--bg:#F3EEDC;--panel:#E7DFC5;--gold:#9A6B08;--paper:#1B1B17;--ink:#F3EEDC;--muted:#5E6B63;--slot:#DCD3B6;--ok:#2E8B4A;--red:#C0343F;--scrim:rgba(40,35,20,.45)}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--paper);font-family:"Manjari",system-ui,sans-serif;font-size:17px;line-height:1.5;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+main{max-width:560px;margin:0 auto;padding:18px 16px 32px}
+section[hidden]{display:none}
+button{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--paper);outline-offset:2px}
+
+/* Home */
+.brand{font-family:"Rozha One",Georgia,serif;font-weight:400;color:var(--gold);line-height:.95;margin:28px 0 4px;font-size:clamp(3rem,15vw,4.6rem)}
+.brand-ml{color:var(--muted);font-size:1.15rem;margin:0 0 28px}
+.daily{display:block;width:100%;text-align:left;background:var(--gold);color:#1B1B17;border:none;border-radius:16px;padding:18px 20px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.28)}
+.daily:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+.daily strong{display:block;font-family:"Rozha One",serif;font-weight:400;font-size:1.6rem;line-height:1.1}
+.daily span{font-size:.98rem}
+.levels{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0 26px}
+.level{background:var(--panel);border:2px solid transparent;border-radius:14px;padding:14px 8px;cursor:pointer;text-align:center}
+.level[hidden]{display:none}
+.levels:has(#deepBtn[hidden]) .level[data-mode="hard"]{grid-column:1/-1}
+.level:hover{border-color:var(--gold)}
+.level strong{display:block;font-family:"Rozha One",serif;font-weight:400;font-size:1.25rem;color:var(--gold)}
+.level span{font-size:.85rem;color:var(--muted)}
+.langhead{display:flex;justify-content:space-between;color:var(--muted);font-size:.92rem;margin:0 2px 8px}
+.langs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.chip{display:flex;align-items:center;gap:7px;background:var(--panel);border:2px solid var(--panel);border-radius:999px;padding:7px 14px 5px;cursor:pointer;font-weight:700;font-size:.95rem}
+.chip em{font-style:normal;font-weight:400;color:var(--muted)}
+.chip span{width:14px;height:14px;border-radius:50%;border:2px solid var(--gold);flex:none;margin-top:-2px}
+.chip[aria-pressed="true"]{border-color:var(--gold)}
+.chip[aria-pressed="true"] span{background:var(--gold)}
+.recap .lang{color:var(--muted);font-weight:400;font-size:.85rem}
+.settings{background:var(--panel);border-radius:14px;padding:4px 16px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;gap:12px}
+.row+.row{border-top:1px solid rgba(127,127,127,.25)}
+.row small{display:block;color:var(--muted);font-size:.85rem;line-height:1.3}
+.switch{appearance:none;flex:none;width:46px;height:26px;border-radius:13px;background:var(--slot);border:2px solid var(--gold);position:relative;cursor:pointer;margin:0}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--gold);transition:left .15s}
+.switch:checked{background:var(--gold)}
+.switch:checked::after{left:22px;background:var(--bg)}
+.links{display:flex;gap:18px;justify-content:center;margin-top:22px}
+.credit{text-align:center;color:var(--muted);font-size:.8rem;margin:14px 0 0}
+.link{background:none;border:none;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px}
+
+/* Play */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:2px solid var(--gold);padding-bottom:10px}
+.home-btn{background:none;border:2px solid var(--gold);border-radius:10px;padding:6px 12px;cursor:pointer;font-weight:700}
+.bar-title{font-family:"Rozha One",serif;color:var(--gold);font-size:1.3rem}
+.stats{text-align:right;font-size:.9rem;color:var(--muted);line-height:1.25}
+.stats b{color:var(--paper);font-family:"Rozha One",serif;font-weight:400;font-size:1.15rem}
+.progress{display:flex;gap:5px;margin:14px 0 6px}
+.progress i{flex:1;height:6px;border-radius:3px;background:var(--slot)}
+.progress i.ok{background:var(--ok)}.progress i.help{background:var(--gold)}.progress i.miss{background:var(--red)}.progress i.now{background:var(--paper);opacity:.5}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.92rem}
+.clues{min-height:1.5em;color:var(--gold);font-size:1rem;margin-top:6px}
+.answer{display:flex;flex-wrap:wrap;gap:14px 18px;justify-content:center;margin:12px 0 8px;padding:18px 10px;background:var(--panel);border-radius:14px}
+.word{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+.tile{width:var(--t,40px);height:calc(var(--t,40px)*1.2);display:grid;place-items:center;border-radius:6px;font-family:"Rozha One",Georgia,serif;font-size:calc(var(--t,40px)*.58);border:none;padding:0;cursor:pointer;user-select:none}
+.slot{background:var(--slot);color:var(--paper);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.slot.filled{background:var(--paper);color:var(--ink)}
+.slot.right{background:var(--ok);color:#fff}
+.slot.wrong{background:var(--red);color:#fff}
+.slot.locked{background:var(--gold);color:#1B1B17;cursor:default}
+.pool{display:flex;flex-direction:column;gap:10px;align-items:center;margin:14px 0}
+.pool .tile{background:var(--gold);color:#1B1B17;box-shadow:0 3px 0 rgba(0,0,0,.3);transition:transform .08s}
+.pool .tile:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.pool .tile.used{visibility:hidden}
+.msg{text-align:center;min-height:1.6em}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--red)}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}}
+.pop{animation:pop .4s}
+@keyframes pop{40%{transform:scale(1.04)}}
+.win .slot.filled{background:var(--ok);color:#fff}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.act{font-weight:700;font-size:.95rem;padding:12px 6px;border-radius:10px;border:2px solid var(--gold);background:var(--bg);cursor:pointer}
+.act small{font-weight:400;color:var(--muted);margin-left:3px}
+.act.primary{background:var(--gold);color:#1B1B17}
+.act:disabled{opacity:.4;cursor:default}
+
+/* Result */
+.result{text-align:center;padding-top:30px}
+.result h2{font-family:"Rozha One",serif;font-weight:400;color:var(--gold);font-size:3.2rem;line-height:1;margin:0}
+.result .sub{color:var(--muted);margin:6px 0 18px}
+.grid{font-size:1.8rem;letter-spacing:4px;margin:0 0 18px}
+.recap{text-align:left;background:var(--panel);border-radius:14px;padding:6px 16px;margin:0 0 20px}
+.recap div{display:flex;justify-content:space-between;gap:10px;padding:8px 0}
+.recap div+div{border-top:1px solid rgba(127,127,127,.25)}
+.recap span{color:var(--muted);font-size:.9rem;white-space:nowrap}
+.btns{display:grid;gap:10px}
+.wa{display:block;text-decoration:none;text-align:center;background:#25D366;color:#08260f;border-radius:10px;padding:13px;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+
+/* Poster collage background */
+#bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--bg)}
+#bg .collage{position:absolute;left:50%;top:50%;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-content:center;transform:translate(-50%,-50%) rotate(-8deg);transition:opacity .6s ease;animation:drift 60s ease-in-out infinite alternate}
+#bg .collage.fade{opacity:0}
+#bg svg{width:88px;height:132px;border-radius:4px;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+#bg::after{content:"";position:absolute;inset:0;background:var(--bg);opacity:.8}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) #bg::after{opacity:.86}}
+@keyframes drift{to{transform:translate(-50%,-53%) rotate(-8deg)}}
+@media (prefers-reduced-motion:reduce){#bg .collage{animation:none}}
+/* Modal */
+.modal{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;padding:20px;z-index:10}
+.modal[hidden]{display:none}
+.card{background:var(--bg);border:2px solid var(--gold);border-radius:18px;max-width:440px;width:100%;padding:22px;max-height:85vh;overflow:auto}
+.card h3{font-family:"Rozha One",serif;font-weight:400;color:var(--gold);font-size:1.6rem;margin:0 0 10px}
+.card p{margin:0 0 10px}
+.card ul{padding-left:20px;margin:0 0 14px}
+.demo{display:flex;gap:4px;margin:6px 0 12px;--t:34px}
+.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;margin:8px 0 16px}
+.statgrid b{display:block;font-family:"Rozha One",serif;font-weight:400;font-size:1.8rem;color:var(--paper)}
+.statgrid span{font-size:.82rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.shake,.pop{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="bg" aria-hidden="true"><div class="collage" id="collage"></div></div>
+<main>
+<section id="home">
+  <h1 class="brand">Filmy Jumble</h1>
+  <p class="brand-ml">Movie titles, all mixed up. Malayalam, Tamil, Telugu, Hindi and English.</p>
+  <button class="daily" id="dailyBtn"><strong id="dailyTitle">Today's five</strong><span id="dailySub">One film from each language, the same for everyone.</span></button>
+  <div class="levels">
+    <button class="level" data-mode="easy"><strong>Easy</strong><span>short, well-known</span></button>
+    <button class="level" data-mode="medium"><strong>Medium</strong><span>popular films</span></button>
+    <button class="level" data-mode="hard"><strong>Hard</strong><span>long or lesser-known</span></button>
+    <button class="level" data-mode="deep" id="deepBtn"><strong>Deep cuts</strong><span>rare films</span></button>
+  </div>
+  <div class="langhead"><span>Film languages</span><span id="langCount"></span></div>
+  <div class="langs" id="langs" role="group" aria-label="Film languages"></div>
+  <div class="settings">
+    <label class="row"><span>Assisted mode<small>Green for the right spot, red for the wrong one. Costs 3 points a film.</small></span><input type="checkbox" class="switch" id="optAssist"></label>
+    <label class="row"><span>Sound and vibration</span><input type="checkbox" class="switch" id="optSound"></label>
+  </div>
+  <div class="links"><button class="link" id="howBtn">How to play</button><button class="link" id="statsBtn">Your stats</button><a class="link" id="privacyLink" href="privacy.html" hidden>Privacy</a></div>
+  <p class="credit" id="tmdbCredit" hidden>Film data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+</section>
+
+<section id="play" hidden>
+  <div class="bar">
+    <button class="home-btn" id="quitBtn">Home</button>
+    <span class="bar-title" id="modeTitle"></span>
+    <div class="stats">Score <b id="score">0</b><br>Streak <b id="streak">0</b></div>
+  </div>
+  <div class="progress" id="progress"></div>
+  <div class="meta"><span id="roundLbl"></span><span id="ptsLbl"></span></div>
+  <div class="clues" id="clues" aria-live="polite"></div>
+  <div class="answer" id="answer"></div>
+  <div class="msg" id="msg" aria-live="polite"></div>
+  <div class="pool" id="pool"></div>
+  <div class="controls">
+    <button class="act" id="actorBtn">Actor<small>−2</small></button>
+    <button class="act" id="dirBtn">Director<small>−2</small></button>
+    <button class="act" id="yearBtn">Year<small>−1</small></button>
+    <button class="act" id="letterBtn">Letter<small>−3</small></button>
+    <button class="act" id="clearBtn">Clear</button>
+    <button class="act primary" id="skipBtn">Skip</button>
+  </div>
+</section>
+
+<section id="result" hidden>
+  <div class="result">
+    <h2 id="resScore"></h2>
+    <p class="sub" id="resSub"></p>
+    <div class="grid" id="resGrid" aria-hidden="true"></div>
+    <div class="recap" id="recap"></div>
+    <div class="btns">
+      <a class="wa" id="waBtn" target="_blank" rel="noopener">Send on WhatsApp</a>
+      <button class="act" id="copyBtn">Copy result</button>
+      <button class="act primary" id="againBtn">Play again</button>
+      <button class="act" id="homeBtn2">Home</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="modal" id="howModal" hidden role="dialog" aria-modal="true" aria-labelledby="howH">
+  <div class="card">
+    <h3 id="howH">How to play</h3>
+    <p>Each round is a film title with its letters jumbled, from Malayalam, Tamil, Telugu, Hindi or English cinema. Pick your languages on the home screen. Tap the gold letters to spell it out. Tap a placed letter to send it back.</p>
+    <ul>
+      <li>A clean solve is worth 10 points.</li>
+      <li>Stuck? Reveal the actor (−2), director (−2) or year (−1), or place the next correct letter (−3).</li>
+      <li>Assisted mode colours each letter as you go:</li>
+    </ul>
+    <div class="demo" aria-hidden="true"><span class="tile slot right">P</span><span class="tile slot right">R</span><span class="tile slot wrong">M</span><span class="tile slot wrong">E</span><span class="tile slot"></span><span class="tile slot"></span></div>
+    <p>Today's five has one film from each language and is the same for everyone, so you can compare scores with friends.</p>
+    <button class="act primary" style="width:100%" id="howClose">Got it</button>
+  </div>
+</div>
+
+<div class="modal" id="statsModal" hidden role="dialog" aria-modal="true" aria-labelledby="statsH">
+  <div class="card">
+    <h3 id="statsH">Your stats</h3>
+    <div class="statgrid" id="statGrid"></div>
+    <button class="act primary" style="width:100%" id="statsClose">Close</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="films.js" onerror="void 0"></script>
+<script>
+const IS_APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+const PLAY_URL="https://play.google.com/store/apps/details?id=com.filmyjumble.app";
+const STANDALONE=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||document.referrer.startsWith("android-app://");
+const ON_SITE=/\.github\.io$/.test(location.hostname);
+const SHARE_URL=(IS_APP||STANDALONE)?PLAY_URL:ON_SITE?location.origin+location.pathname:"https://claude.ai/artifact/N63JDbNECj5izc2QJtz7yS";
+// [title, year, lead actors, director]
+const DATA=[
+["Drishyam",2013,"Mohanlal","Jeethu Joseph"],["Premam",2015,"Nivin Pauly","Alphonse Puthren"],
+["Manichitrathazhu",1993,"Mohanlal, Shobana","Fazil"],["Kireedam",1989,"Mohanlal, Thilakan","Sibi Malayil"],
+["Spadikam",1995,"Mohanlal","Bhadran"],["Kilukkam",1991,"Mohanlal","Priyadarshan"],
+["Chemmeen",1965,"Madhu, Sheela, Sathyan","Ramu Kariat"],["Lucifer",2019,"Mohanlal","Prithviraj Sukumaran"],
+["Aavesham",2024,"Fahadh Faasil","Jithu Madhavan"],["Bramayugam",2024,"Mammootty","Rahul Sadasivan"],
+["Manjummel Boys",2024,"Soubin Shahir","Chidambaram"],["Minnal Murali",2021,"Tovino Thomas","Basil Joseph"],
+["Kumbalangi Nights",2019,"Fahadh Faasil, Soubin Shahir","Madhu C. Narayanan"],["Bangalore Days",2014,"Dulquer Salmaan, Nivin Pauly, Nazriya","Anjali Menon"],
+["Pulimurugan",2016,"Mohanlal","Vysakh"],["Charlie",2015,"Dulquer Salmaan","Martin Prakkat"],
+["Nadodikkattu",1987,"Mohanlal, Sreenivasan","Sathyan Anthikad"],["Ramji Rao Speaking",1989,"Saikumar, Mukesh, Innocent","Siddique–Lal"],
+["Ustad Hotel",2012,"Dulquer Salmaan","Anwar Rasheed"],["Angamaly Diaries",2017,"Antony Varghese","Lijo Jose Pellissery"],
+["Thanmathra",2005,"Mohanlal","Blessy"],["Premalu",2024,"Naslen, Mamitha Baiju","Girish A. D."],
+["Classmates",2006,"Prithviraj, Jayasurya","Lal Jose"],["Rajamanikyam",2005,"Mammootty","Anwar Rasheed"],
+["Godfather",1991,"Mukesh, Innocent, N. N. Pillai","Siddique–Lal"],["Chithram",1988,"Mohanlal","Priyadarshan"],
+["Thoovanathumbikal",1987,"Mohanlal, Sumalatha","P. Padmarajan"],["Big B",2007,"Mammootty","Amal Neerad"],
+["Joji",2021,"Fahadh Faasil","Dileesh Pothan"],["Home",2021,"Indrans, Sreenath Bhasi","Rojin Thomas"],
+["Traffic",2011,"Sreenivasan, Kunchacko Boban","Rajesh Pillai"],["Amaram",1991,"Mammootty","Bharathan"],
+["Vettam",2004,"Dileep","Priyadarshan"],["Aadu",2015,"Jayasurya","Midhun Manuel Thomas"],
+["Guru",1997,"Mohanlal","Rajiv Anchal"],["Oppam",2016,"Mohanlal","Priyadarshan"],
+["Mayanadi",2017,"Tovino Thomas, Aishwarya Lekshmi","Aashiq Abu"],["Thallumaala",2022,"Tovino Thomas, Kalyani Priyadarshan","Khalid Rahman"],
+["Oru Vadakkan Veeragatha",1989,"Mammootty","T. Hariharan"],["Ayyappanum Koshiyum",2020,"Prithviraj, Biju Menon","Sachy"],
+["Maheshinte Prathikaaram",2016,"Fahadh Faasil","Dileesh Pothan"],["Bheeshma Parvam",2022,"Mammootty","Amal Neerad"],
+["Sandesham",1991,"Sreenivasan, Jayaram","Sathyan Anthikad"],["Kaazhcha",2004,"Mammootty","Blessy"],
+["Iyobinte Pusthakam",2014,"Fahadh Faasil","Amal Neerad"],["Kammatipaadam",2016,"Dulquer Salmaan","Rajeev Ravi"],
+["Ennu Ninte Moideen",2015,"Prithviraj, Parvathy","R. S. Vimal"],["Virus",2019,"Ensemble cast","Aashiq Abu"],
+["Jallikattu",2019,"Antony Varghese","Lijo Jose Pellissery"],["Uyare",2019,"Parvathy","Manu Ashokan"],
+["Ohm Shanthi Oshaana",2014,"Nazriya, Nivin Pauly","Jude Anthany Joseph"],["Thattathin Marayathu",2012,"Nivin Pauly","Vineeth Sreenivasan"],
+["Hridayam",2022,"Pranav Mohanlal","Vineeth Sreenivasan"],["Romancham",2023,"Soubin Shahir","Jithu Madhavan"],
+["Devasuram",1993,"Mohanlal","I. V. Sasi"],["Vandanam",1989,"Mohanlal","Priyadarshan"],
+["Aadujeevitham",2024,"Prithviraj","Blessy"],["Kishkindha Kaandam",2024,"Asif Ali","Dinjith Ayyathan"],
+["Rorschach",2022,"Mammootty","Nisam Basheer"],["Nayattu",2021,"Kunchacko Boban, Joju George","Martin Prakkat"],
+["Thondimuthalum Driksakshiyum",2017,"Fahadh Faasil","Dileesh Pothan"],
+["Neram",2013,"Nivin Pauly","Alphonse Puthren"],["Ishq",2019,"Shane Nigam","Anuraj Manohar"],
+["Kali",2016,"Dulquer Salmaan","Sameer Thahir"],["Thira",2013,"Shobana","Vineeth Sreenivasan"],
+["Bhramaram",2009,"Mohanlal","Blessy"],["Nandanam",2002,"Prithviraj, Navya Nair","Ranjith"]
+];
+
+// Built-in starter packs, used when films.js is absent or a language is missing from it
+const BUILTIN={ml:DATA,
+ta:[["Nayakan",1987,"Kamal Haasan","Mani Ratnam"],["Roja",1992,"Arvind Swamy, Madhoo","Mani Ratnam"],["Bombay",1995,"Arvind Swamy, Manisha Koirala","Mani Ratnam"],["Mouna Ragam",1986,"Mohan, Revathi","Mani Ratnam"],["Baashha",1995,"Rajinikanth","Suresh Krissna"],["Muthu",1995,"Rajinikanth","K. S. Ravikumar"],["Padayappa",1999,"Rajinikanth","K. S. Ravikumar"],["Enthiran",2010,"Rajinikanth","Shankar"],["Sivaji",2007,"Rajinikanth","Shankar"],["Anniyan",2005,"Vikram","Shankar"],["Indian",1996,"Kamal Haasan","Shankar"],["Vikram",2022,"Kamal Haasan","Lokesh Kanagaraj"],["Kaithi",2019,"Karthi","Lokesh Kanagaraj"],["Master",2021,"Vijay","Lokesh Kanagaraj"],["Ghilli",2004,"Vijay","Dharani"],["Thuppakki",2012,"Vijay","A. R. Murugadoss"],["Ghajini",2005,"Suriya","A. R. Murugadoss"],["Vaaranam Aayiram",2008,"Suriya","Gautham Vasudev Menon"],["Jailer",2023,"Rajinikanth","Nelson Dilipkumar"],["Asuran",2019,"Dhanush","Vetrimaaran"],["Visaranai",2015,"Dinesh","Vetrimaaran"],["Vada Chennai",2018,"Dhanush","Vetrimaaran"],["Soorarai Pottru",2020,"Suriya","Sudha Kongara"],["Anbe Sivam",2003,"Kamal Haasan, Madhavan","Sundar C"],["Vinnaithaandi Varuvaayaa",2010,"Silambarasan, Trisha","Gautham Vasudev Menon"],["Jigarthanda",2014,"Siddharth, Bobby Simha","Karthik Subbaraj"],["Super Deluxe",2019,"Vijay Sethupathi","Thiagarajan Kumararaja"],["Ratsasan",2018,"Vishnu Vishal","Ram Kumar"],["Autograph",2004,"Cheran","Cheran"],["Thevar Magan",1992,"Kamal Haasan, Sivaji Ganesan","Bharathan"]],
+te:[["Baahubali The Beginning",2015,"Prabhas","S. S. Rajamouli"],["Eega",2012,"Nani, Sudeep","S. S. Rajamouli"],["Magadheera",2009,"Ram Charan","S. S. Rajamouli"],["Simhadri",2003,"N. T. Rama Rao Jr.","S. S. Rajamouli"],["Arjun Reddy",2017,"Vijay Deverakonda","Sandeep Reddy Vanga"],["Pushpa The Rise",2021,"Allu Arjun","Sukumar"],["Rangasthalam",2018,"Ram Charan","Sukumar"],["Pokiri",2006,"Mahesh Babu","Puri Jagannadh"],["Temper",2015,"N. T. Rama Rao Jr.","Puri Jagannadh"],["Athadu",2005,"Mahesh Babu","Trivikram Srinivas"],["Ala Vaikunthapurramuloo",2020,"Allu Arjun","Trivikram Srinivas"],["Okkadu",2003,"Mahesh Babu","Gunasekhar"],["Jersey",2019,"Nani","Gowtam Tinnanuri"],["Mahanati",2018,"Keerthy Suresh","Nag Ashwin"],["Bommarillu",2006,"Siddharth, Genelia","Bhaskar"],["Shiva",1989,"Nagarjuna","Ram Gopal Varma"],["Geethanjali",1989,"Nagarjuna","Mani Ratnam"],["Sankarabharanam",1980,"J. V. Somayajulu","K. Viswanath"],["Swathi Muthyam",1986,"Kamal Haasan","K. Viswanath"],["Mayabazar",1957,"N. T. Rama Rao, Savitri","K. V. Reddy"],["Sita Ramam",2022,"Dulquer Salmaan, Mrunal Thakur","Hanu Raghavapudi"],["Pelli Choopulu",2016,"Vijay Deverakonda, Ritu Varma","Tharun Bhascker"],["Ee Nagaraniki Emaindi",2018,"Vishwak Sen","Tharun Bhascker"],["Hanu Man",2024,"Teja Sajja","Prasanth Varma"]],
+hi:[["Sholay",1975,"Amitabh Bachchan, Dharmendra","Ramesh Sippy"],["Deewaar",1975,"Amitabh Bachchan, Shashi Kapoor","Yash Chopra"],["Dilwale Dulhania Le Jayenge",1995,"Shah Rukh Khan, Kajol","Aditya Chopra"],["Kuch Kuch Hota Hai",1998,"Shah Rukh Khan, Kajol","Karan Johar"],["Lagaan",2001,"Aamir Khan","Ashutosh Gowariker"],["Swades",2004,"Shah Rukh Khan","Ashutosh Gowariker"],["Dil Chahta Hai",2001,"Aamir Khan","Farhan Akhtar"],["Rang De Basanti",2006,"Aamir Khan","Rakeysh Omprakash Mehra"],["Taare Zameen Par",2007,"Aamir Khan, Darsheel Safary","Aamir Khan"],["Dangal",2016,"Aamir Khan","Nitesh Tiwari"],["Andhadhun",2018,"Ayushmann Khurrana","Sriram Raghavan"],["Gangs of Wasseypur",2012,"Manoj Bajpayee","Anurag Kashyap"],["Queen",2014,"Kangana Ranaut","Vikas Bahl"],["Zindagi Na Milegi Dobara",2011,"Hrithik Roshan","Zoya Akhtar"],["Gully Boy",2019,"Ranveer Singh","Zoya Akhtar"],["Barfi",2012,"Ranbir Kapoor, Priyanka Chopra","Anurag Basu"],["Mughal e Azam",1960,"Dilip Kumar, Madhubala","K. Asif"],["Pyaasa",1957,"Guru Dutt","Guru Dutt"],["Mother India",1957,"Nargis","Mehboob Khan"],["Anand",1971,"Rajesh Khanna, Amitabh Bachchan","Hrishikesh Mukherjee"],["Golmaal",1979,"Amol Palekar","Hrishikesh Mukherjee"],["Jab We Met",2007,"Shahid Kapoor, Kareena Kapoor","Imtiaz Ali"],["Kahaani",2012,"Vidya Balan","Sujoy Ghosh"],["Pathaan",2023,"Shah Rukh Khan","Siddharth Anand"],["Chak De India",2007,"Shah Rukh Khan","Shimit Amin"],["Hera Pheri",2000,"Akshay Kumar, Paresh Rawal","Priyadarshan"],["Stree",2018,"Rajkummar Rao","Amar Kaushik"]],
+en:[["The Godfather",1972,"Marlon Brando, Al Pacino","Francis Ford Coppola"],["Casablanca",1942,"Humphrey Bogart, Ingrid Bergman","Michael Curtiz"],["Titanic",1997,"Leonardo DiCaprio, Kate Winslet","James Cameron"],["Avatar",2009,"Sam Worthington","James Cameron"],["Inception",2010,"Leonardo DiCaprio","Christopher Nolan"],["Interstellar",2014,"Matthew McConaughey","Christopher Nolan"],["The Dark Knight",2008,"Christian Bale, Heath Ledger","Christopher Nolan"],["Oppenheimer",2023,"Cillian Murphy","Christopher Nolan"],["Pulp Fiction",1994,"John Travolta, Samuel L. Jackson","Quentin Tarantino"],["Forrest Gump",1994,"Tom Hanks","Robert Zemeckis"],["Back to the Future",1985,"Michael J. Fox","Robert Zemeckis"],["The Shawshank Redemption",1994,"Tim Robbins, Morgan Freeman","Frank Darabont"],["Jurassic Park",1993,"Sam Neill, Laura Dern","Steven Spielberg"],["Jaws",1975,"Roy Scheider","Steven Spielberg"],["Gladiator",2000,"Russell Crowe","Ridley Scott"],["The Matrix",1999,"Keanu Reeves","The Wachowskis"],["Barbie",2023,"Margot Robbie, Ryan Gosling","Greta Gerwig"],["Toy Story",1995,"Tom Hanks, Tim Allen","John Lasseter"],["The Lion King",1994,"Matthew Broderick, James Earl Jones","Roger Allers & Rob Minkoff"],["Psycho",1960,"Anthony Perkins, Janet Leigh","Alfred Hitchcock"],["Rocky",1976,"Sylvester Stallone","John G. Avildsen"],["Goodfellas",1990,"Ray Liotta, Robert De Niro","Martin Scorsese"],["Fight Club",1999,"Brad Pitt, Edward Norton","David Fincher"],["Home Alone",1990,"Macaulay Culkin","Chris Columbus"],["La La Land",2016,"Ryan Gosling, Emma Stone","Damien Chazelle"],["Gravity",2013,"Sandra Bullock","Alfonso Cuarón"],["Skyfall",2012,"Daniel Craig","Sam Mendes"],["Notting Hill",1999,"Julia Roberts, Hugh Grant","Roger Michell"],["Braveheart",1995,"Mel Gibson","Mel Gibson"]]
+};
+// films.js (generated by scripts/fetch-films.mjs) sets window.FILM_DATA = {ml:[[title,year,actors,director,rank],...], ta:[...], ...}
+const LANGS=[["ml","Malayalam","മലയാളം"],["ta","Tamil","தமிழ்"],["te","Telugu","తెలుగు"],["hi","Hindi","हिन्दी"],["en","English","English"]];
+const LANG_NAME=Object.fromEntries(LANGS.map(l=>[l[0],l[1]]));
+const EXT=(window.FILM_DATA&&typeof window.FILM_DATA==="object"&&!Array.isArray(window.FILM_DATA))?window.FILM_DATA:{};
+function level(n,rank){
+  if(rank==null)return n<=7?"easy":n<=13?"medium":"hard";
+  if(rank>3000)return "deep";
+  if(rank<=800&&n<=9)return "easy";
+  if(n>=14||rank>1500)return "hard";
+  return "medium";
+}
+const FILMS=[];
+LANGS.forEach(([code])=>{
+  const rows=(EXT[code]&&EXT[code].length>=20)?EXT[code]:(BUILTIN[code]||[]);
+  rows.forEach(([t,y,a,d,rank])=>{const n=t.replace(/ /g,"").length;FILMS.push({t,y,a,d,rank,lang:code,id:code+":"+t,lvl:level(n,rank)})});
+});
+const AVAIL=LANGS.map(l=>l[0]).filter(c=>FILMS.some(f=>f.lang===c));
+function pool(mode){return FILMS.filter(f=>f.lvl===mode&&opts.langs.includes(f.lang))}
+const LABEL={easy:"Easy",medium:"Medium",hard:"Hard",deep:"Deep cuts",daily:"Today's five"};
+const $=id=>document.getElementById(id);
+
+/* poster collage: original, generated posters styled per language */
+const PAL={
+ ml:[["#1d5e3a","#0b2a1c","#f2c14e","#06150e"],["#7a1f1f","#2b0a0a","#f5d98b","#140404"],["#135a6b","#07262e","#ffd166","#031216"],["#4a5d23","#1a2308","#ffe9a8","#0a0f02"]],
+ ta:[["#c0392b","#3b0d0a","#ffcf5c","#1a0503"],["#e67e22","#5a1e02","#fff1c1","#2a0e00"],["#2a2a2a","#3a0f0f","#ff5a4d","#050000"],["#8e2c48","#2a0812","#ffd479","#120308"]],
+ te:[["#8e1d64","#2b0620","#ffd24a","#14030f"],["#d35400","#4a1500","#ffe28a","#1e0800"],["#2d1b69","#0e0726","#ff9ecf","#050212"],["#b8860b","#3d2b00","#fff4c2","#1a1200"]],
+ hi:[["#e84a7f","#5b1633","#ffe066","#240612"],["#f39c12","#7a2e00","#fff3b0","#2e1100"],["#16a085","#0b3d33","#ffd1dc","#041612"],["#6c3483","#220c2c","#ffcf5c","#0e0413"]],
+ en:[["#2b2b2b","#000000","#f5c518","#000000"],["#1b2a49","#070b16","#e8e8e8","#02040a"],["#5b0e0e","#150202","#f0e6d2","#070000"],["#0f4c5c","#03161b","#ffb4a2","#010809"]]
+};
+const WORDS={
+ ml:["മഴ","കടൽ","രാത്രി","സ്നേഹം","തീ","നിലാവ്","കാറ്റ്","പുഴ","യാത്ര","വീട്"],
+ ta:["மழை","கடல்","இரவு","காதல்","நெருப்பு","நிலா","காற்று","பயணம்","வீடு"],
+ te:["వాన","సముద్రం","రాత్రి","ప్రేమ","నిప్పు","వెన్నెల","గాలి","ప్రయాణం","ఇల్లు"],
+ hi:["बारिश","समुंदर","रात","प्यार","आग","चाँद","हवा","सफ़र","घर"],
+ en:["RAIN","THE SEA","NIGHT","LOVE","FIRE","MOONLIGHT","THE WIND","JOURNEY","HOME"]
+};
+const FONT={ml:"Manjari,sans-serif",ta:"sans-serif",te:"sans-serif",hi:"'Rozha One',serif",en:"'Rozha One',serif"};
+const pick=a=>a[Math.floor(Math.random()*a.length)],rn=(a,b)=>a+Math.random()*(b-a);
+function figure(x,sc,c){const y0=110-28*sc;return `<circle cx="${x}" cy="${110-33*sc}" r="${4*sc}" fill="${c}"/><path d="M${x-6*sc} ${y0}h${12*sc}l${2*sc} ${16*sc}h${-4*sc}l${-1*sc} ${12*sc}h${-2*sc}l${-1*sc} ${-10*sc}l${-1*sc} ${10*sc}h${-2*sc}l${-1*sc} ${-12*sc}h${-4*sc}z" fill="${c}"/>`}
+function palm(x,h,c){const tx=x+8,ty=110-h;return `<path d="M${x} 110Q${x+4} ${110-h/2} ${tx} ${ty}" stroke="${c}" stroke-width="3" fill="none"/><path d="M${tx} ${ty}q-10 -8 -20 2M${tx} ${ty}q10 -8 20 2M${tx} ${ty}q-6 -12 -14 -10M${tx} ${ty}q6 -12 14 -10M${tx} ${ty}q0 -10 2 -14" stroke="${c}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`}
+function skyline(c){let x=0,o="";while(x<100){const w=rn(7,14),h=rn(12,34);o+=`<rect x="${x.toFixed(1)}" y="${(110-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" fill="${c}"/>`;x+=w+rn(0,2)}return o}
+function motif(l,d,a,sx,sy,sr){
+  if(l==="ml")return `<rect y="100" width="100" height="10" fill="${d}" opacity=".5"/>`+palm(rn(8,20),rn(40,55),d)+palm(rn(62,74),rn(30,45),d)+`<path d="M40 101h30l-4 5h-22z" fill="${d}"/><path d="M47 101q8 -10 16 0" fill="${d}"/>`;
+  if(l==="ta"){const cx=rn(35,65);let o=`<rect y="106" width="100" height="4" fill="${d}"/>`;for(let i=0;i<5;i++){const w=40-8*i,y=106-8*(i+1);o+=`<polygon points="${cx-w/2},${y+8} ${cx+w/2},${y+8} ${cx+w/2-3},${y} ${cx-w/2+3},${y}" fill="${d}"/>`}return o+`<circle cx="${cx}" cy="64" r="2.5" fill="${d}"/>`+(Math.random()<.5?figure(cx<50?82:18,.9,d):"")}
+  if(l==="te"){let o="";for(let i=0;i<12;i++){const t=i*Math.PI/6;o+=`<line x1="${(sx+Math.cos(t)*(sr+3)).toFixed(1)}" y1="${(sy+Math.sin(t)*(sr+3)).toFixed(1)}" x2="${(sx+Math.cos(t)*(sr+12)).toFixed(1)}" y2="${(sy+Math.sin(t)*(sr+12)).toFixed(1)}" stroke="${a}" stroke-width="2" opacity=".6"/>`}return o+`<path d="M0 110Q25 ${rn(78,90)} 50 100T100 ${rn(86,96)}V110H0z" fill="${d}"/>`+figure(rn(40,60),1.1,d)}
+  if(l==="hi")return skyline(d)+`<path d="M${rn(55,70)} 110v-16a9 9 0 0 1 18 0v16z" fill="${d}"/>`+figure(38,1,d)+(Math.random()<.6?figure(50,.9,d):"");
+  let o=`<polygon points="20,110 ${rn(0,20)},0 ${rn(22,34)},0" fill="${a}" opacity=".14"/><polygon points="80,110 ${rn(66,78)},0 ${rn(80,100)},0" fill="${a}" opacity=".14"/>`;
+  for(let i=0;i<6;i++)o+=`<circle cx="${rn(5,95).toFixed(1)}" cy="${rn(5,50).toFixed(1)}" r=".8" fill="${a}"/>`;
+  return o+skyline(d)+(Math.random()<.5?figure(rn(30,70),1,d):"");
+}
+let pn=0;
+function poster(l){
+  const [c1,c2,a,d]=pick(PAL[l]),id="pg"+(++pn),w=pick(WORDS[l]);
+  const sx=rn(22,78),sy=rn(24,56),sr=rn(11,20),fs=w.length>7?11:w.length>4?14:18;
+  return `<svg viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="100" height="150" fill="url(#${id})"/><circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="${sr.toFixed(1)}" fill="${a}" opacity=".85"/>${motif(l,d,a,sx,sy,sr)}<rect y="110" width="100" height="40" fill="${d}" opacity=".6"/><text x="50" y="127" text-anchor="middle" font-size="${fs}" font-weight="700" fill="${a}" font-family="${FONT[l]}" lang="${l}">${w}</text><rect x="22" y="134" width="56" height="1.6" fill="${a}" opacity=".5"/><rect x="30" y="139" width="40" height="1.6" fill="${a}" opacity=".35"/><rect x="36" y="144" width="28" height="1.6" fill="${a}" opacity=".25"/></svg>`;
+}
+let bgKey="";
+function setBg(langs){
+  langs=(langs&&langs.length?langs:AVAIL).filter(l=>PAL[l]);
+  const key=langs.slice().sort().join(",");if(key===bgKey)return;bgKey=key;
+  const c=document.getElementById("collage"),vm=Math.max(window.innerWidth,window.innerHeight),size=Math.ceil(vm*1.5);
+  const cols=Math.ceil(size/98),rows=Math.ceil(size/142);
+  let html="";for(let i=0;i<cols*rows;i++)html+=poster(langs[i%langs.length===0?0:Math.floor(Math.random()*langs.length)]);
+  const apply=()=>{c.style.width=cols*98+"px";c.innerHTML=html;requestAnimationFrame(()=>c.classList.remove("fade"))};
+  if(c.innerHTML){c.classList.add("fade");setTimeout(apply,350)}else apply();
+}
+/* storage */
+function get(k,d){try{const v=localStorage.getItem("pj_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function put(k,v){try{localStorage.setItem("pj_"+k,JSON.stringify(v))}catch(e){}}
+const opts=get("opts",{assist:false,sound:true,seenHow:false});
+if(!Array.isArray(opts.langs)||!opts.langs.some(l=>AVAIL.includes(l)))opts.langs=AVAIL.slice();
+opts.langs=opts.langs.filter(l=>AVAIL.includes(l));
+const stats=get("stats",{played:0,best:{easy:0,medium:0,hard:0,deep:0,daily:0},solved:0,films:0,dStreak:0,dLast:""});
+
+/* rng */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function dayNo(s){return Math.round((new Date(s+"T12:00:00")-new Date("2026-09-29T12:00:00"))/864e5)+1}
+function shuffle(a,rnd){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function scramble(w,rnd){if(new Set(w).size<2)return w.split("");let s,n=0;do{s=shuffle(w.split(""),rnd);n++}while(s.join("")===w&&n<50);return s}
+
+/* feedback */
+let actx=null;
+function beep(f,d,type){if(!opts.sound)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.type=type||"sine";o.frequency.value=f;g.gain.setValueAtTime(.12,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+d)}catch(e){}}
+function buzz(p){if(opts.sound&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove("show"),1800)}
+
+/* screens */
+function show(id){["home","play","result"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0)}
+function refreshHome(){
+  const t=today(),done=get("daily_"+t,null);
+  $("dailyTitle").textContent=`Today's five #${dayNo(t)}`;
+  $("dailySub").textContent=done?`Played: ${done.score}/50 ${done.grid}. Tap to see and share your result.`:"One film from each language, the same for everyone.";
+  $("optAssist").checked=opts.assist;$("optSound").checked=opts.sound;
+  const box=$("langs");box.innerHTML="";
+  LANGS.filter(([c])=>AVAIL.includes(c)).forEach(([c,name,native])=>{
+    const b=document.createElement("button");b.className="chip";
+    const on=opts.langs.includes(c);b.setAttribute("aria-pressed",on);
+    b.innerHTML=`<span></span>${name}${native!==name?` <em lang="${c}">${native}</em>`:""}`;
+    b.onclick=()=>{
+      if(on&&opts.langs.length===1){toast("Keep at least one language");return}
+      opts.langs=on?opts.langs.filter(x=>x!==c):[...opts.langs,c];put("opts",opts);refreshHome();
+    };
+    box.appendChild(b);
+  });
+  const n=FILMS.filter(f=>opts.langs.includes(f.lang)).length;
+  $("langCount").textContent=`${n.toLocaleString()} films`;
+  $("deepBtn").hidden=pool("deep").length<10;
+  setBg(opts.langs);
+}
+
+/* game */
+let G=null,cur=null,done=false;
+function newGame(mode){
+  let rnd,films;
+  if(mode==="daily"){
+    const t=today(),prev=get("daily_"+t,null);
+    if(prev){showResult(prev,true);return}
+    rnd=mulberry32(parseInt(t.replace(/-/g,""),10)*2654435761>>>0);
+    films=AVAIL.map(code=>shuffle(FILMS.filter(f=>f.lang===code&&(f.rank==null||f.rank<=500)),rnd)[0]).filter(Boolean);
+  }else{
+    rnd=Math.random;
+    const all=pool(mode);
+    if(all.length<3){toast("Not enough films here. Add another language.");return}
+    const recent=get("recent_"+mode,[]);
+    let fresh=all.filter(f=>!recent.includes(f.id));
+    if(fresh.length<10)fresh=all;
+    films=shuffle(fresh,rnd).slice(0,10);
+    put("recent_"+mode,[...recent,...films.map(f=>f.id)].slice(-Math.min(400,Math.max(0,all.length-10))));
+  }
+  G={mode,films,rnd,r:0,score:0,streak:0,marks:[],log:[]};
+  $("modeTitle").textContent=LABEL[mode];
+  show("play");loadRound();
+}
+function sizeTiles(){
+  if(!cur)return;const longest=Math.max(...cur.words.map(w=>w.length));
+  const tw=Math.max(20,Math.min(44,Math.floor((Math.min(window.innerWidth,560)-60)/longest)-4));
+  document.documentElement.style.setProperty("--t",tw+"px");
+}
+function loadRound(){
+  const f=G.films[G.r],words=f.t.toUpperCase().split(" ");
+  cur={f,words,shown:{},hints:0,assistUsed:opts.assist,
+    tiles:words.map(w=>scramble(w,G.rnd).map(ch=>({ch,used:false}))),
+    slots:words.map(w=>Array(w.length).fill(null))};
+  done=false;sizeTiles();setBg([f.lang]);
+  $("roundLbl").textContent=`Film ${G.r+1} of ${G.films.length} · ${LANG_NAME[f.lang]}`;
+  $("msg").textContent="";$("msg").className="msg";
+  $("answer").classList.remove("win","pop");
+  ["actorBtn","dirBtn","yearBtn","letterBtn","clearBtn"].forEach(b=>$(b).disabled=false);
+  $("skipBtn").textContent="Skip";
+  $("score").textContent=G.score;$("streak").textContent=G.streak;
+  renderProgress();renderClues();render();updPts();
+}
+function roundPts(){const s=cur.shown;return Math.max(1,10-3*cur.hints-(s.actor?2:0)-(s.dir?2:0)-(s.year?1:0)-(cur.assistUsed?3:0))}
+function updPts(){$("ptsLbl").textContent=done?"":`Worth ${roundPts()} pts`}
+function renderProgress(){
+  const p=$("progress");p.innerHTML="";
+  G.films.forEach((_,i)=>{const b=document.createElement("i");const m=G.marks[i];b.className=m==="🟩"?"ok":m==="🟨"?"help":m==="🟥"?"miss":i===G.r?"now":"";p.appendChild(b)});
+}
+function renderClues(){
+  const c=$("clues");c.innerHTML="";const f=cur.f;
+  const add=s=>{const d=document.createElement("div");d.textContent=s;c.appendChild(d)};
+  if(cur.shown.actor)add("Starring "+f.a);
+  if(cur.shown.dir)add("Directed by "+f.d);
+  if(cur.shown.year)add("Released in "+f.y);
+}
+function clue(k,btn){if(done||cur.shown[k])return;cur.shown[k]=true;$(btn).disabled=true;renderClues();updPts();beep(520,.08)}
+function render(){
+  const A=$("answer"),P=$("pool");A.innerHTML="";P.innerHTML="";
+  cur.words.forEach((w,wi)=>{
+    const wa=document.createElement("div");wa.className="word";A.appendChild(wa);
+    cur.slots[wi].forEach((sl,si)=>{
+      const b=document.createElement("button");let cls="tile slot",state="";
+      if(sl){cls+=" filled";
+        if(sl.locked)cls+=" locked";
+        else if(opts.assist&&!done){const ok=cur.tiles[wi][sl.ti].ch===w[si];cls+=ok?" right":" wrong";state=ok?", right place":", wrong place"}}
+      b.className=cls;b.textContent=sl?cur.tiles[wi][sl.ti].ch:"";
+      b.setAttribute("aria-label",sl?`${b.textContent}${state}`:"Empty");
+      b.onclick=()=>unplace(wi,si);wa.appendChild(b);
+    });
+    const wp=document.createElement("div");wp.className="word";
+    cur.tiles[wi].forEach((tl,ti)=>{
+      const b=document.createElement("button");b.className="tile"+(tl.used?" used":"");b.textContent=tl.ch;
+      b.setAttribute("aria-label","Letter "+tl.ch);if(tl.used)b.tabIndex=-1;
+      b.onclick=()=>place(wi,ti);wp.appendChild(b);
+    });
+    P.appendChild(wp);
+  });
+}
+function place(wi,ti){
+  if(done||cur.tiles[wi][ti].used)return;
+  const k=cur.slots[wi].indexOf(null);if(k<0)return;
+  cur.tiles[wi][ti].used=true;cur.slots[wi][k]={ti,locked:false};
+  beep(opts.assist?(cur.tiles[wi][ti].ch===cur.words[wi][k]?660:300):480,.05,"triangle");buzz(8);
+  $("msg").textContent="";render();check();
+}
+function unplace(wi,si){
+  if(done)return;const sl=cur.slots[wi][si];if(!sl||sl.locked)return;
+  cur.tiles[wi][sl.ti].used=false;cur.slots[wi][si]=null;beep(360,.04,"triangle");render();
+}
+function clearAll(){
+  if(done)return;
+  cur.slots.forEach((row,wi)=>row.forEach((sl,si)=>{if(sl&&!sl.locked){cur.tiles[wi][sl.ti].used=false;row[si]=null}}));
+  $("msg").textContent="";render();
+}
+function giveLetter(){
+  if(done)return;
+  for(let wi=0;wi<cur.words.length;wi++){
+    const w=cur.words[wi],row=cur.slots[wi];
+    let k=-1;for(let i=0;i<w.length;i++){if(!row[i]||cur.tiles[wi][row[i].ti].ch!==w[i]){k=i;break}}
+    if(k<0)continue;
+    for(let i=k;i<w.length;i++){if(row[i]&&!row[i].locked){cur.tiles[wi][row[i].ti].used=false;row[i]=null}}
+    const ti=cur.tiles[wi].findIndex(t=>!t.used&&t.ch===w[k]);if(ti<0)continue;
+    cur.tiles[wi][ti].used=true;row[k]={ti,locked:true};cur.hints++;
+    beep(520,.08);render();updPts();check();return;
+  }
+}
+function check(){
+  if(cur.slots.some(row=>row.includes(null)))return;
+  const guess=cur.slots.map((row,wi)=>row.map(sl=>cur.tiles[wi][sl.ti].ch).join("")).join(" ");
+  if(guess===cur.words.join(" ")){
+    const pts=roundPts(),clean=pts===10;
+    G.score+=pts;G.streak++;finish(true,`${cur.f.t}! +${pts}`,clean?"🟩":"🟨",pts);
+    beep(660,.1);setTimeout(()=>beep(880,.16),90);buzz([15,40,25]);
+  }else{
+    $("msg").textContent=opts.assist?"Move the red letters to fix it.":"Not quite. Tap letters to swap them around.";
+    $("msg").className="msg bad";
+    const A=$("answer");A.classList.remove("shake");void A.offsetWidth;A.classList.add("shake");
+    beep(180,.18,"sawtooth");buzz(60);
+  }
+}
+function finish(won,text,mark,pts){
+  done=true;G.marks[G.r]=mark;G.log.push({t:cur.f.t,lang:cur.f.lang,pts:pts||0});
+  if(!won){G.streak=0;
+    cur.words.forEach((w,wi)=>{cur.tiles[wi].forEach(t=>t.used=false);
+      cur.slots[wi]=w.split("").map(ch=>{const ti=cur.tiles[wi].findIndex(t=>!t.used&&t.ch===ch);cur.tiles[wi][ti].used=true;return{ti,locked:false}})});}
+  render();
+  const A=$("answer");A.classList.toggle("win",won);if(won){A.classList.remove("pop");void A.offsetWidth;A.classList.add("pop")}
+  $("msg").textContent=text;$("msg").className="msg "+(won?"ok":"bad");
+  $("score").textContent=G.score;$("streak").textContent=G.streak;
+  cur.shown={actor:true,dir:true,year:true};renderClues();renderProgress();updPts();
+  ["actorBtn","dirBtn","yearBtn","letterBtn","clearBtn"].forEach(b=>$(b).disabled=true);
+  $("skipBtn").textContent=G.r+1<G.films.length?"Next film":"See result";
+  $("skipBtn").focus({preventScroll:true});
+}
+function next(){
+  if(!done){finish(false,`It was ${cur.f.t}.`,"🟥",0);beep(220,.2);return}
+  G.r++;if(G.r<G.films.length)loadRound();else endGame();
+}
+function endGame(){
+  const max=G.films.length*10,grid=G.marks.join("");
+  stats.played++;stats.films+=G.films.length;stats.solved+=G.marks.filter(m=>m!=="🟥").length;
+  const newBest=G.score>(stats.best[G.mode]||0);if(newBest)stats.best[G.mode]=G.score;
+  const res={mode:G.mode,score:G.score,max,grid,log:G.log,newBest};
+  if(G.mode==="daily"){
+    const t=today();res.date=t;
+    const y=new Date(Date.now()-864e5),ys=y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
+    stats.dStreak=stats.dLast===ys?stats.dStreak+1:1;stats.dLast=t;
+    put("daily_"+t,res);
+  }
+  put("stats",stats);cur=null;showResult(res,false);
+}
+function shareText(res){
+  const head=res.mode==="daily"?`Filmy Jumble #${dayNo(res.date)}`:`Filmy Jumble (${LABEL[res.mode]})`;
+  return `🎬 ${head}\n${res.grid}\n${res.score}/${res.max}\n${SHARE_URL}`;
+}
+let lastRes=null;
+function showResult(res,revisit){
+  lastRes=res;
+  setBg([...new Set((res.log||[]).map(l=>l.lang).filter(Boolean))]);
+  $("resScore").textContent=`${res.score} / ${res.max}`;
+  $("resSub").textContent=revisit?"You've played today's five. New films tomorrow.":res.newBest?`New best for ${LABEL[res.mode]}!`:LABEL[res.mode];
+  $("resGrid").textContent=res.grid;
+  const rc=$("recap");rc.innerHTML="";
+  (res.log||[]).forEach(l=>{const d=document.createElement("div");const a=document.createElement("strong");a.textContent=l.t;if(l.lang){const sm=document.createElement("small");sm.className="lang";sm.textContent=" "+LANG_NAME[l.lang];a.appendChild(sm)}const b=document.createElement("span");b.textContent=l.pts?`+${l.pts}`:"skipped";d.append(a,b);rc.appendChild(d)});
+  $("waBtn").href="https://wa.me/?text="+encodeURIComponent(shareText(res));
+  $("againBtn").textContent=res.mode==="daily"?"Play Easy":"Play again";
+  show("result");
+}
+async function copyResult(){
+  const txt=shareText(lastRes);
+  try{if(navigator.share){await navigator.share({text:txt});return}}catch(e){if(e&&e.name==="AbortError")return}
+  try{await navigator.clipboard.writeText(txt);toast("Result copied")}catch(e){
+    const ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");toast("Result copied")}catch(e2){toast("Couldn't copy. Use WhatsApp instead.")}ta.remove();}
+}
+function openModal(id){$(id).hidden=false;const b=$(id).querySelector("button");b&&b.focus()}
+function closeModal(id){$(id).hidden=true}
+function renderStats(){
+  const pct=stats.films?Math.round(stats.solved/stats.films*100):0;
+  const cells=[[stats.played,"games"],[pct+"%","films solved"],[stats.dStreak,"daily streak"],[stats.best.easy,"best easy"],[stats.best.medium,"best medium"],[stats.best.hard,"best hard"]];
+  $("statGrid").innerHTML="";cells.forEach(([v,l])=>{const d=document.createElement("div");const b=document.createElement("b");b.textContent=v;const s=document.createElement("span");s.textContent=l;d.append(b,s);$("statGrid").appendChild(d)});
+}
+
+/* wiring */
+$("dailyBtn").onclick=()=>newGame("daily");
+document.querySelectorAll(".level").forEach(b=>b.onclick=()=>newGame(b.dataset.mode));
+$("optAssist").onchange=e=>{opts.assist=e.target.checked;put("opts",opts)};
+$("optSound").onchange=e=>{opts.sound=e.target.checked;put("opts",opts);if(opts.sound)beep(660,.08)};
+$("howBtn").onclick=()=>openModal("howModal");
+$("howClose").onclick=()=>{closeModal("howModal");opts.seenHow=true;put("opts",opts)};
+$("statsBtn").onclick=()=>{renderStats();openModal("statsModal")};
+$("statsClose").onclick=()=>closeModal("statsModal");
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m){m.hidden=true;if(m.id==="howModal"){opts.seenHow=true;put("opts",opts)}}}));
+$("quitBtn").onclick=()=>{if(G&&G.r>0&&!confirm("Leave this game? Your progress will be lost."))return;cur=null;refreshHome();show("home")};
+$("actorBtn").onclick=()=>clue("actor","actorBtn");
+$("dirBtn").onclick=()=>clue("dir","dirBtn");
+$("yearBtn").onclick=()=>clue("year","yearBtn");
+$("letterBtn").onclick=giveLetter;$("clearBtn").onclick=clearAll;$("skipBtn").onclick=next;
+$("copyBtn").onclick=copyResult;
+$("againBtn").onclick=()=>newGame(lastRes.mode==="daily"?"easy":lastRes.mode);
+$("homeBtn2").onclick=()=>{refreshHome();show("home")};
+window.addEventListener("resize",sizeTiles);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){document.querySelectorAll(".modal").forEach(m=>m.hidden=true);return}
+  if($("play").hidden||!cur||e.metaKey||e.ctrlKey)return;
+  if(done&&e.key==="Enter"){e.preventDefault();next();return}
+  if(done)return;
+  if(e.key==="Backspace"){e.preventDefault();for(let wi=cur.slots.length-1;wi>=0;wi--){const row=cur.slots[wi];for(let i=row.length-1;i>=0;i--){if(row[i]&&!row[i].locked){unplace(wi,i);return}}}return}
+  const ch=e.key.toUpperCase();if(!/^[A-Z]$/.test(ch))return;
+  for(let wi=0;wi<cur.words.length;wi++){if(!cur.slots[wi].includes(null))continue;const ti=cur.tiles[wi].findIndex(t=>!t.used&&t.ch===ch);if(ti>=0){place(wi,ti);return}}
+});
+try{const CapApp=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.App;
+  if(CapApp)CapApp.addListener("backButton",()=>{
+    const open=[...document.querySelectorAll(".modal")].find(m=>!m.hidden);
+    if(open){open.hidden=true;return}
+    if(!$("home").hidden){CapApp.exitApp();return}
+    cur=null;refreshHome();show("home");
+  });}catch(e){}
+if(Object.keys(EXT).length){$("tmdbCredit").hidden=false}
+if(ON_SITE||STANDALONE){$("privacyLink").hidden=false}
+if("serviceWorker" in navigator&&location.protocol==="https:"&&!IS_APP&&(ON_SITE||STANDALONE)){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+refreshHome();
+if(!opts.seenHow)openModal("howModal");
+</script>
+</body>
+</html>

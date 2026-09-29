@@ -1,0 +1,29 @@
+name: Update film list
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 1 * *"   # 03:00 UTC on the 1st of every month
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Download films from TMDB
+        run: node fetch-films.mjs
+        env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          OUT: .
+          OVERRIDES: overrides.json
+      - name: Save the new list
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add films.js films-review.json
+          git commit -m "Update film list" || echo "No changes"
+          git push
