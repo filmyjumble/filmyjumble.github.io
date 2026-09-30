@@ -221,7 +221,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <label class="row"><span>Sound and vibration</span><input type="checkbox" class="switch" id="optSound"></label>
   </div>
   <div class="links"><button class="link" id="howBtn">How to play</button><button class="link" id="statsBtn">Your stats</button><a class="link" id="privacyLink" href="privacy.html" hidden>Privacy</a></div>
-  <p class="credit">Version 1.6</p>
+  <p class="credit">Version 1.8</p>
   <p class="credit" id="tmdbCredit" hidden>Film data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
 </section>
 
@@ -884,7 +884,7 @@ class FireNet{
     for(let i=0;i<6;i++){
       const code=codeGen(),ref=this.db.ref("rooms/"+code),snap=await ref.get();
       if(snap.exists())continue;
-      await ref.set({host:this.me,status:"lobby",langs,level:opts.fireLevel||"mixed",secs:FIRE_SECS,created:this.now(),players:{[this.me]:{name,score:0,solved:0,idx:0,lastAt:0}}});
+      await ref.set({host:this.me,status:"lobby",langs,level:opts.fireLevel||"mixed",secs:FIRE_SECS,created:this.now(),players:{[this.me]:{name,online:true,score:0,solved:0,idx:0,lastAt:0}}});
       this.attach(ref);return code;
     }
     throw new Error("Couldn't make a room. Try again.");
@@ -896,28 +896,31 @@ class FireNet{
     const r=snap.val(),n=Object.keys(r.players||{}).length;
     if((r.created||0)<this.now()-ROOM_HOURS*3600e3)throw new Error("That room has expired. Ask for a new code.");
     if(!(r.players&&r.players[this.me])&&n>=FIRE_MAX)throw new Error("That room is full.");
-    if(!(r.players&&r.players[this.me]))await ref.child("players/"+this.me).set({name,score:0,solved:0,idx:0,lastAt:0});
+    if(!(r.players&&r.players[this.me]))await ref.child("players/"+this.me).set({name,online:true,score:0,solved:0,idx:0,lastAt:0});
+    else await ref.child("players/"+this.me).update({name,online:true});
     this.attach(ref);return code;
   }
   attach(ref){
     this.ref=ref;
-    ref.child("players/"+this.me).onDisconnect().remove();
+    ref.child("players/"+this.me).onDisconnect().update({online:false});
     ref.on("value",s=>{if(this.cb)this.cb(s.val())});
     // Phones drop the connection when you switch apps (e.g. to WhatsApp to send the invite).
     // Firebase then removes you from the room; when the connection comes back, put you back in.
     this.conn=this.db.ref(".info/connected");
-    this.onConn=s=>{if(s.val()===true&&this.ref){this.ref.child("players/"+this.me).onDisconnect().remove();this.ensureMe()}};
+    this.onConn=s=>{if(s.val()===true&&this.ref){this.ref.child("players/"+this.me).onDisconnect().update({online:false});this.ensureMe()}};
     this.conn.on("value",this.onConn);
   }
   async ensureMe(){
     if(!this.ref||this.fixing)return;this.fixing=true;
     try{
       const me=this.ref.child("players/"+this.me),snap=await me.get();
-      if(this.ref&&!snap.exists())await me.set({name:this.name,score:(FR&&FR.score)||0,solved:(FR&&FR.solved)||0,idx:(G&&G.mode==="fire"&&G.r)||0,lastAt:0});
+      if(!this.ref)return;
+      if(!snap.exists())await me.set({name:this.name,online:true,score:(FR&&FR.score)||0,solved:(FR&&FR.solved)||0,idx:(G&&G.mode==="fire"&&G.r)||0,lastAt:0});
+      else{const v=snap.val();if(v.online===false||!v.name)await me.update({online:true,name:v.name||this.name})}
     }catch(e){}finally{this.fixing=false}
   }
   listen(cb){this.cb=cb}
-  update(p){if(this.ref)this.ref.child("players/"+this.me).update(p)}
+  update(p){if(this.ref)this.ref.child("players/"+this.me).update({...p,name:this.name,online:true})}
   resetPatch(room){const u={};Object.keys(room.players||{}).forEach(id=>{u[`players/${id}/score`]=0;u[`players/${id}/solved`]=0;u[`players/${id}/idx`]=0;u[`players/${id}/lastAt`]=0});return u}
   start(room){this.ref.update({...this.resetPatch(room),status:"playing",seed:Math.floor(Math.random()*2**31),startAt:this.now()+4000})}
   rematch(room){this.ref.update({...this.resetPatch(room),status:"lobby"})}
@@ -955,10 +958,11 @@ async function fireEnter(kind){
 function isHost(room){
   if(!room||!room.players)return false;
   if(room.players[room.host])return room.host===net.me;
-  return Object.keys(room.players).sort()[0]===net.me; // host left: next player takes over
+  const here=Object.keys(room.players).filter(id=>room.players[id].online!==false).sort();
+  return (here[0]||Object.keys(room.players).sort()[0])===net.me; // host left: next player takes over
 }
 function ranked(players){
-  return Object.entries(players||{}).map(([id,p])=>({id,...p})).sort((a,b)=>((b.score||0)-(a.score||0))||((b.solved||0)-(a.solved||0))||((a.lastAt||9e15)-(b.lastAt||9e15))||a.name.localeCompare(b.name));
+  return Object.entries(players||{}).map(([id,p])=>({id,...p,name:p.name||"Player"})).sort((a,b)=>((b.score||0)-(a.score||0))||((b.solved||0)-(a.solved||0))||((a.lastAt||9e15)-(b.lastAt||9e15))||a.name.localeCompare(b.name));
 }
 function onRoom(room){
   if(!FR)return;
@@ -968,9 +972,11 @@ function onRoom(room){
   const now=net.now(),end=(room.startAt||0)+roomSecs(room)*1000;
   if(room.status==="playing"&&room.seed!==FR.seed&&now<end&&room.players&&room.players[net.me]){startRace(room);return}
   if(room.status==="lobby"&&FR.view!=="fireLobby"&&!FR.racing){FR.seed=null;show("fire");fireView("fireLobby")}
-  if(FR.racing)renderLanes(room);
-  if(FR.view==="fireLobby")renderLobby(room);
-  if(FR.view==="firePodium")renderPodium(room);
+  try{
+    if(FR.racing)renderLanes(room);
+    if(FR.view==="fireLobby")renderLobby(room);
+    if(FR.view==="firePodium")renderPodium(room);
+  }catch(e){console.error(e)}
 }
 function renderLobby(room){
   $("roomCode").textContent=FR.practice?"PRACTICE":FR.code;
@@ -979,7 +985,7 @@ function renderLobby(room){
   FR.invite={text:`🔥 Join my Filmy Jumble fire round! Room code ${FR.code}`,url:link};
   const L=$("playerList");L.innerHTML="";
   ranked(room.players).sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
-    const li=document.createElement("li");li.textContent=p.name;
+    const li=document.createElement("li");li.textContent=p.name+(p.online===false?" (away)":"");
     const sm=document.createElement("small");sm.textContent=(p.id===room.host?"host":"")+(p.id===net.me?(p.id===room.host?" · you":"you"):"");
     li.appendChild(sm);L.appendChild(li);
   });
@@ -996,7 +1002,7 @@ function renderLobby(room){
   $("lobbyNote").textContent=midGame?"A round is in progress. You'll join the next one.":host?(n<2?"You're in! You don't need the link yourself. Share it, wait for friends to appear here, then tap Start.":`${n} players ready. Tap Start when everyone's here.`):"Waiting for the host to start…";
 }
 function startRace(room){
-  FR.seed=room.seed;FR.racing=true;FR.solved=0;FR.score=0;FR.prev={};
+  FR.seed=room.seed;FR.racing=true;FR.live=false;FR.solved=0;FR.score=0;FR.prev={};
   G={mode:"fire",films:fireFilms(room.seed,room.langs||AVAIL,room.level),rnd:mulberry32((room.seed+7)>>>0),r:0,score:0,streak:0,marks:[],log:[]};
   $("play").classList.add("fire");$("modeTitle").textContent="🔥 Fire round";
   $("normalStats").hidden=true;$("fireTimer").hidden=false;$("lanes").hidden=false;
@@ -1007,7 +1013,8 @@ function tick(){
   if(!FR||!FR.room)return;
   const now=net.now(),start=FR.room.startAt,total=roomSecs(FR.room),left=start+total*1000-now,cd=$("countdown");
   if(now<start){const n=Math.ceil((start-now)/1000);if(cd.textContent!==String(n)){cd.textContent=n;beep(440,.08)}cd.hidden=false;$("fireTimer").textContent=mmss(total);return}
-  if(!cd.hidden){cd.hidden=true;beep(880,.15);done=false;render()}
+  // Go live exactly once, even if this phone joined late or its clock is ahead and never saw the countdown
+  if(!FR.live){FR.live=true;cd.hidden=true;beep(880,.15);done=false;render()}
   const secs=Math.max(0,Math.ceil(left/1000)),T=$("fireTimer");
   T.textContent=mmss(secs);T.classList.toggle("low",secs<=10);
   if(left<=0)fireEnd();
