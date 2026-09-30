@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.filmyjumble.app",
+        "sha256_cert_fingerprints": ["07:FB:2F:35:C6:60:BE:62:16:F7:8C:D8:89:C0:FE:1F:2A:F9:A9:84:D0:E0:19:2B:D8:26:14:9A:B7:19:AA:8A"]
+      }
+    }]
