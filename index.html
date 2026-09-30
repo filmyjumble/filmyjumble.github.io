@@ -143,10 +143,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .timer{font-family:"Rozha One",serif;font-size:2rem;line-height:1;color:var(--gold);min-width:64px;text-align:right}
 .timer.low{color:var(--red);animation:pulse .5s infinite alternate}
 @keyframes pulse{to{transform:scale(1.12)}}
-#play.fire .clue,#play.fire #assistBtn,#play.fire .progress,#play.fire #ptsLbl,#play.fire .clues{display:none}
-#play.fire .controls{grid-template-columns:1fr 1fr}
+#play.fire .progress{display:none}
 .lanes{background:var(--panel);border-radius:12px;padding:8px 12px;margin:10px 0 4px;display:grid;gap:4px}
-.lane{display:grid;grid-template-columns:20px 84px 1fr 26px;align-items:center;gap:8px;font-size:.88rem;line-height:1.2}
+.lane{display:grid;grid-template-columns:20px 84px 1fr 34px;align-items:center;gap:8px;font-size:.88rem;line-height:1.2}
 .lane .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lane.me .nm{color:var(--gold);font-weight:700}
 .lane .bar{height:8px;border-radius:4px;background:var(--slot);overflow:hidden;border:none;padding:0}
@@ -178,6 +177,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .podium li.me{color:var(--gold);font-weight:700}
 .podium .medal{font-size:1.4rem}
 .podium b{font-family:"Rozha One",serif;font-weight:400;font-size:1.4rem}
+.podium .pts{text-align:right;line-height:1.1}
+.podium .pts small{display:block;color:var(--muted);font-size:.8rem;font-weight:400}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.seg button{flex:1 1 auto;min-width:64px;padding:9px 10px 7px;border-radius:10px;border:2px solid var(--gold);background:var(--bg);font-weight:700;font-size:.9rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--gold);color:#1B1B17}
+.seg button:disabled{cursor:default}
+.seg button:disabled:not([aria-pressed="true"]){opacity:.35}
+.roominfo{color:var(--muted);font-size:.9rem;margin:4px 0 14px}
 /* Modal */
 .modal{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;padding:20px;z-index:10}
 .modal[hidden]{display:none}
@@ -200,7 +207,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <p class="brand-ml">Movie titles, all mixed up. Malayalam, Tamil, Telugu, Hindi and English.</p>
   <p class="playcount" id="playCount" hidden></p>
   <button class="daily" id="dailyBtn"><strong id="dailyTitle">Today's five</strong><span id="dailySub">One film from each language, the same for everyone.</span></button>
-  <button class="firecard" id="fireBtn"><strong>🔥 Fire round</strong><span>Race your friends: 60 seconds, as many films as you can.</span></button>
+  <button class="firecard" id="fireBtn"><strong>🔥 Fire round</strong><span>Race your friends: 3 minutes, as many films as you can.</span></button>
   <div class="levels">
     <button class="level" data-mode="easy"><strong>Easy</strong><span>short, well-known</span></button>
     <button class="level" data-mode="medium"><strong>Medium</strong><span>popular films</span></button>
@@ -252,7 +259,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <span></span>
   </div>
   <div id="fireSetup" class="fview">
-    <p class="fire-intro">Everyone gets the same jumbled films. You have 60 seconds. Watch your friends' scores climb live.</p>
+    <p class="fire-intro">Everyone gets the same jumbled films. You have 3 minutes. A clean solve is worth 10 points; clues and Assisted cost points, just like the normal game. Watch your friends' scores climb live.</p>
     <label class="flabel" for="fireName">Your nickname</label>
     <input class="finput" id="fireName" maxlength="16" autocomplete="nickname" placeholder="e.g. Aachi">
     <div id="onlineBox">
@@ -269,12 +276,16 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <a class="wa" id="inviteBtn" target="_blank" rel="noopener">Invite on WhatsApp</a>
     <p class="flabel" style="margin-top:18px">Players</p>
     <ul class="plist" id="playerList"></ul>
+    <p class="flabel" style="margin-top:14px">Films</p>
+    <div class="seg" id="levelSeg" role="group" aria-label="Film level"></div>
+    <p class="roominfo" id="roomInfo"></p>
     <p class="fnote" id="lobbyNote"></p>
     <button class="act primary wide" id="startBtn">Start the round</button>
     <button class="act wide" id="leaveBtn">Leave room</button>
   </div>
   <div id="firePodium" class="fview" hidden>
     <h2 class="podium-h">Time's up!</h2>
+    <p class="roominfo" id="podiumInfo" style="text-align:center"></p>
     <ol class="podium" id="podium"></ol>
     <p class="flabel">Films this round</p>
     <div class="recap" id="fireFilms"></div>
@@ -792,14 +803,23 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&!IS_APP&&(ON_SITE
 }
 
 /* ================= FIRE ROUND (multiplayer, 60 s) ================= */
-const FIRE_SECS=60,FIRE_MAX=8;
+const FIRE_SECS=180,FIRE_MAX=8;
+const FIRE_LEVELS=[["mixed","Mixed","easy + medium"],["easy","Easy",""],["medium","Medium",""],["hard","Hard",""],["deep","Deep cuts",""]];
+const roomSecs=room=>(room&&room.secs)||FIRE_SECS;
+const mmss=t=>Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
+const durLabel=t=>t%60?mmss(t):(t/60)+" minute"+(t===60?"":"s");
 const hasFirebase=()=>!!(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.databaseURL&&(ON_SITE||STANDALONE));
 let net=null,FR=null; // FR = local fire state
-function fireFilms(seed,langs){
-  const rnd=mulberry32(seed>>>0);
-  let pool=FILMS.filter(f=>langs.includes(f.lang)&&(f.lvl==="easy"||f.lvl==="medium")&&(f.rank==null||f.rank<=1500));
-  if(pool.length<40)pool=FILMS.filter(f=>langs.includes(f.lang)&&f.lvl!=="deep");
-  return shuffle(pool,rnd).slice(0,60);
+function fireFilms(seed,langs,level){
+  const rnd=mulberry32(seed>>>0),inLang=f=>langs.includes(f.lang);
+  let pool=level&&level!=="mixed"
+    ?FILMS.filter(f=>inLang(f)&&f.lvl===level)
+    :FILMS.filter(f=>inLang(f)&&(f.lvl==="easy"||f.lvl==="medium")&&(f.rank==null||f.rank<=1500));
+  if(pool.length<20){ // small pack: widen to neighbouring levels so the round never runs dry
+    const near={easy:["easy","medium"],medium:["easy","medium","hard"],hard:["medium","hard","deep"],deep:["hard","deep"],mixed:["easy","medium","hard"]}[level||"mixed"];
+    pool=FILMS.filter(f=>inLang(f)&&near.includes(f.lvl));
+  }
+  return shuffle(pool,rnd).slice(0,150);
 }
 function codeGen(){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let c="";for(let i=0;i<4;i++)c+=A[Math.floor(Math.random()*A.length)];return c}
 
@@ -809,18 +829,18 @@ class BotNet{
   now(){return Date.now()}
   async create(name,langs){
     const bots=[["Meera",7],["Rahul",9],["Anu",11]];
-    this.room={code:"PRAC",host:"me",status:"lobby",langs,players:{me:{name,solved:0,idx:0,lastAt:0}}};
-    bots.forEach(([n,sp],i)=>this.room.players["bot"+i]={name:n+" 🤖",solved:0,idx:0,lastAt:0,sp});
+    this.room={code:"PRAC",host:"me",status:"lobby",langs,level:opts.fireLevel||"mixed",secs:FIRE_SECS,players:{me:{name,score:0,solved:0,idx:0,lastAt:0}}};
+    bots.forEach(([n,sp],i)=>this.room.players["bot"+i]={name:n+" 🤖",score:0,solved:0,idx:0,lastAt:0,sp});
     this.emit();return "PRAC";
   }
   listen(cb){this.cb=cb;this.emit()}
   emit(){if(this.cb&&this.room)this.cb(JSON.parse(JSON.stringify(this.room)))}
   update(p){Object.assign(this.room.players.me,p);this.emit()}
-  reset(){Object.values(this.room.players).forEach(p=>{p.solved=0;p.idx=0;p.lastAt=0})}
+  reset(){Object.values(this.room.players).forEach(p=>{p.score=0;p.solved=0;p.idx=0;p.lastAt=0})}
   start(){
     this.clear();this.reset();
     this.room.status="playing";this.room.seed=Math.floor(Math.random()*2**31);this.room.startAt=this.now()+3500;this.emit();
-    const end=this.room.startAt+FIRE_SECS*1000;
+    const end=this.room.startAt+roomSecs(this.room)*1000;
     Object.entries(this.room.players).forEach(([id,p])=>{
       if(!p.sp)return;
       const step=()=>{
@@ -828,7 +848,7 @@ class BotNet{
         if(at>end)return;
         this.t.push(setTimeout(()=>{
           const q=this.room.players[id];if(!q)return;
-          q.idx++;if(Math.random()<0.85){q.solved++;q.lastAt=this.now()}
+          q.idx++;if(Math.random()<0.85){q.solved++;q.score+=10-[0,0,0,0,1,2,3,5][Math.floor(Math.random()*8)];q.lastAt=this.now()}
           this.emit();step();
         },wait));
       };
@@ -836,6 +856,7 @@ class BotNet{
     });
   }
   rematch(){this.clear();this.reset();this.room.status="lobby";this.emit()}
+  setLevel(l){this.room.level=l;this.emit()}
   clear(){this.t.forEach(clearTimeout);this.t=[]}
   leave(){this.clear();this.cb=null}
 }
@@ -860,7 +881,7 @@ class FireNet{
     for(let i=0;i<6;i++){
       const code=codeGen(),ref=this.db.ref("rooms/"+code),snap=await ref.get();
       if(snap.exists())continue;
-      await ref.set({host:this.me,status:"lobby",langs,created:this.now(),players:{[this.me]:{name,solved:0,idx:0,lastAt:0}}});
+      await ref.set({host:this.me,status:"lobby",langs,level:opts.fireLevel||"mixed",secs:FIRE_SECS,created:this.now(),players:{[this.me]:{name,score:0,solved:0,idx:0,lastAt:0}}});
       this.attach(ref);return code;
     }
     throw new Error("Couldn't make a room. Try again.");
@@ -870,15 +891,16 @@ class FireNet{
     if(!snap.exists())throw new Error("No room with that code.");
     const r=snap.val(),n=Object.keys(r.players||{}).length;
     if(!(r.players&&r.players[this.me])&&n>=FIRE_MAX)throw new Error("That room is full.");
-    await ref.child("players/"+this.me).set({name,solved:0,idx:0,lastAt:0});
+    await ref.child("players/"+this.me).set({name,score:0,solved:0,idx:0,lastAt:0});
     this.attach(ref);return code;
   }
   attach(ref){this.ref=ref;ref.child("players/"+this.me).onDisconnect().remove();ref.on("value",s=>{if(this.cb)this.cb(s.val())})}
   listen(cb){this.cb=cb}
   update(p){if(this.ref)this.ref.child("players/"+this.me).update(p)}
-  resetPatch(room){const u={};Object.keys(room.players||{}).forEach(id=>{u[`players/${id}/solved`]=0;u[`players/${id}/idx`]=0;u[`players/${id}/lastAt`]=0});return u}
+  resetPatch(room){const u={};Object.keys(room.players||{}).forEach(id=>{u[`players/${id}/score`]=0;u[`players/${id}/solved`]=0;u[`players/${id}/idx`]=0;u[`players/${id}/lastAt`]=0});return u}
   start(room){this.ref.update({...this.resetPatch(room),status:"playing",seed:Math.floor(Math.random()*2**31),startAt:this.now()+4000})}
   rematch(room){this.ref.update({...this.resetPatch(room),status:"lobby"})}
+  setLevel(l){if(this.ref)this.ref.update({level:l})}
   leave(){if(!this.ref)return;const ref=this.ref;this.ref=null;this.cb=null;ref.off();ref.child("players/"+this.me).remove().catch(()=>{})}
 }
 
@@ -914,13 +936,13 @@ function isHost(room){
   return Object.keys(room.players).sort()[0]===net.me; // host left: next player takes over
 }
 function ranked(players){
-  return Object.entries(players||{}).map(([id,p])=>({id,...p})).sort((a,b)=>(b.solved-a.solved)||((a.lastAt||9e15)-(b.lastAt||9e15))||a.name.localeCompare(b.name));
+  return Object.entries(players||{}).map(([id,p])=>({id,...p})).sort((a,b)=>((b.score||0)-(a.score||0))||((b.solved||0)-(a.solved||0))||((a.lastAt||9e15)-(b.lastAt||9e15))||a.name.localeCompare(b.name));
 }
 function onRoom(room){
   if(!FR)return;
   if(!room){alert("The room was closed.");fireLeave();return}
   FR.room=room;
-  const now=net.now(),end=(room.startAt||0)+FIRE_SECS*1000;
+  const now=net.now(),end=(room.startAt||0)+roomSecs(room)*1000;
   if(room.status==="playing"&&room.seed!==FR.seed&&now<end&&room.players&&room.players[net.me]){startRace(room);return}
   if(room.status==="lobby"&&FR.view!=="fireLobby"&&!FR.racing){FR.seed=null;show("fire");fireView("fireLobby")}
   if(FR.racing)renderLanes(room);
@@ -938,14 +960,21 @@ function renderLobby(room){
     const sm=document.createElement("small");sm.textContent=(p.id===room.host?"host":"")+(p.id===net.me?(p.id===room.host?" · you":"you"):"");
     li.appendChild(sm);L.appendChild(li);
   });
-  const host=isHost(room),n=Object.keys(room.players||{}).length;
-  const midGame=room.status==="playing"&&net.now()<(room.startAt||0)+FIRE_SECS*1000;
+  const host=isHost(room),n=Object.keys(room.players||{}).length,lvl=room.level||"mixed";
+  const seg=$("levelSeg");seg.innerHTML="";
+  FIRE_LEVELS.forEach(([k,label])=>{
+    const b=document.createElement("button");b.textContent=label;b.setAttribute("aria-pressed",String(k===lvl));
+    b.disabled=!host;b.onclick=()=>{if(k===lvl)return;opts.fireLevel=k;put("opts",opts);net.setLevel(k);beep(560,.05)};
+    seg.appendChild(b);
+  });
+  $("roomInfo").textContent=`${durLabel(roomSecs(room))} · ${(room.langs||AVAIL).map(l=>LANG_NAME[l]).join(", ")}${host?"":" · the host picks the level"}`;
+  const midGame=room.status==="playing"&&net.now()<(room.startAt||0)+roomSecs(room)*1000;
   $("startBtn").hidden=!host||midGame;
   $("lobbyNote").textContent=midGame?"A round is in progress. You'll join the next one.":host?(n<2?"Share the code, or start on your own.":`${n} players ready.`):"Waiting for the host to start…";
 }
 function startRace(room){
-  FR.seed=room.seed;FR.racing=true;FR.solved=0;FR.prev={};
-  G={mode:"fire",films:fireFilms(room.seed,room.langs||AVAIL),rnd:mulberry32((room.seed+7)>>>0),r:0,score:0,streak:0,marks:[],log:[]};
+  FR.seed=room.seed;FR.racing=true;FR.solved=0;FR.score=0;FR.prev={};
+  G={mode:"fire",films:fireFilms(room.seed,room.langs||AVAIL,room.level),rnd:mulberry32((room.seed+7)>>>0),r:0,score:0,streak:0,marks:[],log:[]};
   $("play").classList.add("fire");$("modeTitle").textContent="🔥 Fire round";
   $("normalStats").hidden=true;$("fireTimer").hidden=false;$("lanes").hidden=false;
   show("play");loadRound();done=true;renderLanes(room);
@@ -953,19 +982,20 @@ function startRace(room){
 }
 function tick(){
   if(!FR||!FR.room)return;
-  const now=net.now(),start=FR.room.startAt,left=start+FIRE_SECS*1000-now,cd=$("countdown");
-  if(now<start){const n=Math.ceil((start-now)/1000);if(cd.textContent!==String(n)){cd.textContent=n;beep(440,.08)}cd.hidden=false;$("fireTimer").textContent=FIRE_SECS;return}
+  const now=net.now(),start=FR.room.startAt,total=roomSecs(FR.room),left=start+total*1000-now,cd=$("countdown");
+  if(now<start){const n=Math.ceil((start-now)/1000);if(cd.textContent!==String(n)){cd.textContent=n;beep(440,.08)}cd.hidden=false;$("fireTimer").textContent=mmss(total);return}
   if(!cd.hidden){cd.hidden=true;beep(880,.15);done=false;render()}
   const secs=Math.max(0,Math.ceil(left/1000)),T=$("fireTimer");
-  T.textContent=secs;T.classList.toggle("low",secs<=10);
+  T.textContent=mmss(secs);T.classList.toggle("low",secs<=10);
   if(left<=0)fireEnd();
 }
 function fireSolved(){
-  FR.solved++;
-  net.update({solved:FR.solved,idx:G.r+1,lastAt:net.now()});
-  G.log.push({t:cur.f.t,lang:cur.f.lang,pts:1});
+  const pts=roundPts();
+  FR.solved++;FR.score+=pts;
+  net.update({score:FR.score,solved:FR.solved,idx:G.r+1,lastAt:net.now()});
+  G.log.push({t:cur.f.t,lang:cur.f.lang,pts});
   done=true;render();$("answer").classList.add("win");
-  $("msg").textContent=`${cur.f.t}! 🔥`;$("msg").className="msg ok";
+  $("msg").textContent=`${cur.f.t}! +${pts} 🔥`;updPts();$("msg").className="msg ok";
   beep(660,.1);setTimeout(()=>beep(880,.14),90);buzz([15,40,25]);
   setTimeout(fireNext,450);
 }
@@ -982,14 +1012,14 @@ function fireNext(){
   loadRound();$("roundLbl").textContent=`Film ${G.r+1} · ${LANG_NAME[G.films[G.r].lang]}`;
 }
 function renderLanes(room){
-  const list=ranked(room.players),top=Math.max(5,...list.map(p=>p.solved||0)),L=$("lanes");
+  const list=ranked(room.players),top=Math.max(50,...list.map(p=>p.score||0)),L=$("lanes");
   L.innerHTML="";
   list.slice(0,6).forEach((p,i)=>{
     const d=document.createElement("div");d.className="lane"+(p.id===net.me?" me":"");
     const prev=FR.prev[p.id]||0;
-    if(p.id!==net.me&&(p.solved||0)>prev){d.classList.add("flash");if(FR.racing&&!done)beep(990,.04,"triangle")}
-    FR.prev[p.id]=p.solved||0;
-    d.innerHTML=`<span>${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm"></span><span class="bar"><i style="width:${Math.round((p.solved||0)/top*100)}%"></i></span><span class="n">${p.solved||0}</span>`;
+    if(p.id!==net.me&&(p.score||0)>prev){d.classList.add("flash");if(FR.racing&&!done)beep(990,.04,"triangle")}
+    FR.prev[p.id]=p.score||0;
+    d.innerHTML=`<span>${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm"></span><span class="bar"><i style="width:${Math.round((p.score||0)/top*100)}%"></i></span><span class="n">${p.score||0}</span>`;
     d.querySelector(".nm").textContent=p.id===net.me?"You":p.name;
     L.appendChild(d);
   });
@@ -997,7 +1027,7 @@ function renderLanes(room){
 function fireEnd(){
   if(!FR||!FR.racing)return;
   FR.racing=false;done=true;clearInterval(FR.timer);
-  net.update({solved:FR.solved,done:true});
+  net.update({score:FR.score,solved:FR.solved,done:true});
   $("countdown").hidden=true;$("fireTimer").classList.remove("low");
   $("msg").textContent="⏰ Time's up!";$("msg").className="msg bad";render();
   beep(330,.3,"square");buzz([60,60,60]);
@@ -1008,7 +1038,7 @@ function renderPodium(room){
   const list=ranked(room.players),P=$("podium");P.innerHTML="";
   list.forEach((p,i)=>{
     const li=document.createElement("li");if(p.id===net.me)li.className="me";
-    li.innerHTML=`<span class="medal">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm"></span><b>${p.solved||0}</b>`;
+    li.innerHTML=`<span class="medal">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm"></span><span class="pts"><b>${p.score||0}</b> pts<small>${p.solved||0} film${p.solved===1?"":"s"}</small></span>`;
     li.querySelector(".nm").textContent=p.id===net.me?`${p.name} (you)`:p.name;P.appendChild(li);
   });
   const reached=Math.max(1,...list.map(p=>p.idx||0),G&&G.mode==="fire"?G.r+1:1);
@@ -1016,9 +1046,10 @@ function renderPodium(room){
   (G&&G.mode==="fire"?G.films:[]).slice(0,reached).forEach((f,i)=>{
     const d=document.createElement("div"),a=document.createElement("strong"),b=document.createElement("span");
     a.textContent=f.t;const sm=document.createElement("small");sm.className="lang";sm.textContent=" "+LANG_NAME[f.lang];a.appendChild(sm);
-    const mine=G.log[i];b.textContent=mine?(mine.pts?"✓ solved":"skipped"):"";d.append(a,b);R.appendChild(d);
+    const mine=G.log[i];b.textContent=mine?(mine.pts?`+${mine.pts}`:"skipped"):"";d.append(a,b);R.appendChild(d);
   });
   const host=isHost(room);$("rematchBtn").hidden=!host;$("rematchNote").hidden=host;
+  const L=FIRE_LEVELS.find(x=>x[0]===(room.level||"mixed"));$("podiumInfo").textContent=`${L?L[1]:"Mixed"} films · ${durLabel(roomSecs(room))}`;
 }
 function fireLeave(){
   if(FR){clearInterval(FR.timer);FR.racing=false}
