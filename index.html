@@ -10,7 +10,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Limelight&family=Manjari:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0F3B34;--panel:#154840;--gold:#D8A93A;--paper:#F3EEDC;--ink:#1B1B17;
@@ -127,6 +127,42 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
 
+/* Retro home */
+#home{padding-bottom:8px}
+.marquee{position:relative;margin:18px 4px 22px;padding:24px 18px 22px;text-align:center;border-radius:20px;background:radial-gradient(ellipse at 50% 0%,#4a1612 0%,#2a0c0a 60%,#1c0706 100%);border:3px solid #b8862b;box-shadow:0 0 0 6px #1c0706,0 0 0 8px #8a6320,0 14px 34px rgba(0,0,0,.45)}
+.marquee::before{content:"";position:absolute;inset:7px;border:5px dotted #ffd98a;border-radius:14px;filter:drop-shadow(0 0 3px #ffb84d);opacity:.9;animation:bulbs 1.6s steps(2,end) infinite;pointer-events:none}
+@keyframes bulbs{50%{opacity:.45}}
+.now{font-family:"Limelight",Georgia,serif;letter-spacing:.42em;text-transform:uppercase;color:#ffd98a;font-size:.78rem;margin:0 0 4px}
+.brand{font-family:"Limelight",Georgia,serif;font-weight:400;font-size:clamp(3rem,17vw,4.8rem);line-height:.92;margin:4px 0 10px;color:#ffe9b0;text-shadow:0 0 6px rgba(255,184,77,.9),0 0 22px rgba(255,150,50,.45),0 3px 0 #7a1f1f}
+.brand-ml{color:#f0d9b0;font-size:1rem;margin:0}
+.ticket{position:relative;display:flex;align-items:stretch;width:100%;border:none;padding:0;margin:0 0 14px;cursor:pointer;text-align:left;border-radius:12px;-webkit-mask:radial-gradient(circle 12px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 12px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat;mask:radial-gradient(circle 12px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 12px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat;transition:transform .12s}
+.ticket:active{transform:translateY(2px) rotate(-.4deg)}
+.ticket.gold{background:linear-gradient(#f6dc8d,#e9c46a);color:#2b1406}
+.ticket.red{background:linear-gradient(#e7654d,#c9412f);color:#fff4e2}
+.tk-main{flex:1;display:block;padding:16px 12px 15px 28px}
+.tk-kicker{display:block;font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;font-weight:700;opacity:.75}
+.tk-main strong{display:block;font-family:"Limelight",Georgia,serif;font-weight:400;font-size:1.75rem;line-height:1.1;margin:3px 0 4px}
+.tk-main>span{display:block;font-size:.92rem;line-height:1.35}
+.tk-stub{flex:none;width:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-left:2px dashed currentColor;opacity:.85;padding-right:10px;font-family:"Limelight",Georgia,serif;text-transform:uppercase;letter-spacing:.08em;font-size:.82rem}
+.tk-stub b{font-weight:400}
+.reel-label{display:flex;align-items:center;gap:12px;font-family:"Limelight",Georgia,serif;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-size:1rem;margin:20px 0 12px}
+.reel-label::before,.reel-label::after{content:"";flex:1;height:2px;background:var(--gold);opacity:.55;border-radius:1px}
+#home .levels{display:flex;gap:8px;margin:0 0 16px}
+#home .level{flex:1 1 0;min-width:0;font-family:"Limelight",Georgia,serif;font-size:1.02rem;color:var(--gold);padding:18px 2px;border:2px solid var(--gold);border-radius:6px;background:radial-gradient(circle,var(--gold) 0 1.6px,transparent 2px) 3px 4px/11px 8px repeat-x,radial-gradient(circle,var(--gold) 0 1.6px,transparent 2px) 3px calc(100% - 4px)/11px 8px repeat-x,var(--bg);white-space:nowrap}
+#home .level:hover,#home .level:active{background-color:var(--panel)}
+#home .level[hidden]{display:none}
+.langline{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;margin:0 0 14px;padding:12px 14px 10px;border-radius:10px;border:1.5px dashed var(--gold);background:var(--bg);cursor:pointer;font-size:.95rem;text-align:left}
+.langline .edit{color:var(--gold);font-weight:700;flex:none}
+#home .playcount{text-align:center;margin:18px 0 0;font-weight:400;color:var(--muted);font-size:.9rem}
+.foot{display:flex;justify-content:center;align-items:center;gap:6px 18px;flex-wrap:wrap;margin-top:18px}
+.soundtog{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.soundtog input{position:absolute;opacity:0;width:1px;height:1px}
+.soundtog input:checked~.off,.soundtog input:not(:checked)~.on{display:none}
+.soundtog:focus-within{outline:3px solid var(--paper);outline-offset:2px;border-radius:4px}
+#bg .grain{position:absolute;inset:0;z-index:2;opacity:.14;mix-blend-mode:overlay;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+#bg .vig{position:absolute;inset:0;z-index:1;box-shadow:inset 0 0 180px rgba(0,0,0,.55)}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) #bg .vig{box-shadow:inset 0 0 160px rgba(60,30,0,.18)}}
+@media (prefers-reduced-motion:reduce){.marquee::before{animation:none}}
 /* Poster collage background */
 #bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--bg)}
 #bg .collage{position:absolute;left:50%;top:50%;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-content:center;transform:translate(-50%,-50%) rotate(-8deg);transition:opacity .6s ease;animation:drift 60s ease-in-out infinite alternate}
@@ -201,27 +237,38 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 </style>
 </head>
 <body>
-<div id="bg" aria-hidden="true"><div class="collage" id="collage"></div></div>
+<div id="bg" aria-hidden="true"><div class="collage" id="collage"></div><div class="vig"></div><div class="grain"></div></div>
 <main>
 <section id="home">
-  <h1 class="brand">Filmy Jumble</h1>
-  <p class="brand-ml">Movie titles, all mixed up. Malayalam, Tamil, Telugu, Hindi and English.</p>
-  <p class="playcount" id="playCount" hidden></p>
-  <button class="daily" id="dailyBtn"><strong id="dailyTitle">Today's five</strong><span id="dailySub">One film from each language, the same for everyone.</span></button>
-  <button class="firecard" id="fireBtn"><strong>🔥 Fire round</strong><span>Race your friends: 3 minutes, as many films as you can.</span></button>
+  <header class="marquee">
+    <p class="now">Now showing</p>
+    <h1 class="brand">Filmy<br>Jumble</h1>
+    <p class="brand-ml">Unscramble the titles. Five languages, one screen.</p>
+  </header>
+  <button class="langline" id="langBtn"><span id="langSummary">Malayalam films</span><span class="edit">Change</span></button>
+  <button class="ticket gold" id="dailyBtn">
+    <span class="tk-main"><small class="tk-kicker">Daily show</small><strong id="dailyTitle">Today's five</strong><span id="dailySub">5 new Malayalam films every day. Everyone gets the same five.</span></span>
+    <span class="tk-stub" aria-hidden="true"><b>Admit</b><b>One</b></span>
+  </button>
+  <button class="ticket red" id="fireBtn">
+    <span class="tk-main"><small class="tk-kicker">With friends</small><strong>Fire round</strong><span>3 minutes. Everyone races the same films.</span></span>
+    <span class="tk-stub" aria-hidden="true"><b>Live</b><b>🔥</b></span>
+  </button>
+  <p class="reel-label">Or pick a level</p>
   <div class="levels">
-    <button class="level" data-mode="easy"><strong>Easy</strong><span>short, well-known</span></button>
-    <button class="level" data-mode="medium"><strong>Medium</strong><span>popular films</span></button>
-    <button class="level" data-mode="hard"><strong>Hard</strong><span>long or lesser-known</span></button>
-    <button class="level" data-mode="deep" id="deepBtn"><strong>Deep cuts</strong><span>rare films</span></button>
+    <button class="level" data-mode="easy">Easy</button>
+    <button class="level" data-mode="medium">Medium</button>
+    <button class="level" data-mode="hard">Hard</button>
+    <button class="level" data-mode="deep" id="deepBtn">Deep cuts</button>
   </div>
-  <div class="langhead"><span>Film languages</span><span id="langCount"></span></div>
-  <div class="langs" id="langs" role="group" aria-label="Film languages"></div>
-  <div class="settings">
-    <label class="row"><span>Sound and vibration</span><input type="checkbox" class="switch" id="optSound"></label>
-  </div>
-  <div class="links"><button class="link" id="howBtn">How to play</button><button class="link" id="statsBtn">Your stats</button><a class="link" id="privacyLink" href="privacy.html" hidden>Privacy</a></div>
-  <p class="credit">Version 1.8</p>
+  <p class="playcount" id="playCount" hidden></p>
+  <nav class="foot">
+    <button class="link" id="howBtn">How to play</button>
+    <button class="link" id="statsBtn">Stats</button>
+    <label class="link soundtog"><input type="checkbox" id="optSound"><span class="on">Sound on</span><span class="off">Sound off</span></label>
+    <a class="link" id="privacyLink" href="privacy.html" hidden>Privacy</a>
+  </nav>
+  <p class="credit">Version 2.1</p>
   <p class="credit" id="tmdbCredit" hidden>Film data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
 </section>
 
@@ -324,8 +371,17 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
       <li>Turn on Assisted for any film (−3) to colour each letter as you go:</li>
     </ul>
     <div class="demo" aria-hidden="true"><span class="tile slot right">P</span><span class="tile slot right">R</span><span class="tile slot wrong">M</span><span class="tile slot wrong">E</span><span class="tile slot"></span><span class="tile slot"></span></div>
-    <p>Today's five has one film from each language and is the same for everyone, so you can compare scores with friends.</p>
+    <p>Today's five: five new films every day from your chosen languages. Everyone who picks the same languages gets the same five, so you can compare scores with friends.</p>
     <button class="act primary" style="width:100%" id="howClose">Got it</button>
+  </div>
+</div>
+
+<div class="modal" id="langModal" hidden role="dialog" aria-modal="true" aria-labelledby="langH">
+  <div class="card">
+    <h3 id="langH">Film languages</h3>
+    <div class="langhead"><span>Pick the languages you want</span><span id="langCount"></span></div>
+    <div class="langs" id="langs" role="group" aria-label="Film languages"></div>
+    <button class="act primary" style="width:100%" id="langClose">Done</button>
   </div>
 </div>
 
@@ -461,7 +517,7 @@ function setBg(langs){
 function get(k,d){try{const v=localStorage.getItem("pj_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
 function put(k,v){try{localStorage.setItem("pj_"+k,JSON.stringify(v))}catch(e){}}
 const opts=get("opts",{assist:false,sound:true,seenHow:false});
-if(!Array.isArray(opts.langs)||!opts.langs.some(l=>AVAIL.includes(l)))opts.langs=AVAIL.slice();
+if(!Array.isArray(opts.langs)||!opts.langs.some(l=>AVAIL.includes(l)))opts.langs=AVAIL.includes("ml")?["ml"]:AVAIL.slice(0,1);
 opts.langs=opts.langs.filter(l=>AVAIL.includes(l));
 const stats=get("stats",{played:0,best:{easy:0,medium:0,hard:0,deep:0,daily:0},solved:0,films:0,dStreak:0,dLast:""});
 
@@ -499,12 +555,25 @@ function countGame(){
   if(!get("counted",false)){put("counted",true);hit("players")}
   countAt=0;
 }
+/* Today's five: same five films for everyone who picks the same languages today */
+const dailyKey=()=>today()+"_"+AVAIL.filter(l=>opts.langs.includes(l)).join("-");
+function dailyWho(){
+  const L=AVAIL.filter(l=>opts.langs.includes(l));
+  return L.length===AVAIL.length?"all five languages":L.length===1?LANG_NAME[L[0]]:L.map(l=>LANG_NAME[l]).join(" + ");
+}
+function dailyFilms(rnd){
+  const L=AVAIL.filter(l=>opts.langs.includes(l)),top=f=>f.rank==null||f.rank<=1500,inL=f=>L.includes(f.lang);
+  const pick=(lv,n,taken)=>shuffle(FILMS.filter(f=>inL(f)&&f.lvl===lv&&top(f)&&!taken.includes(f)),rnd).slice(0,n);
+  const out=[];out.push(...pick("easy",2,out));out.push(...pick("medium",2,out));out.push(...pick("hard",1,out));
+  if(out.length<5)out.push(...shuffle(FILMS.filter(f=>inL(f)&&f.lvl!=="deep"&&!out.includes(f)),rnd).slice(0,5-out.length));
+  return out;
+}
 /* screens */
 function show(id){["home","play","result","fire"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0)}
 function refreshHome(){
-  const t=today(),done=get("daily_"+t,null);
+  const t=today(),done=get("daily_"+dailyKey(),null);
   $("dailyTitle").textContent=`Today's five #${dayNo(t)}`;
-  $("dailySub").textContent=done?`Played: ${done.score}/50 ${done.grid}. Tap to see and share your result.`:"One film from each language, the same for everyone.";
+  $("dailySub").textContent=done?`Played: ${done.score}/50 ${done.grid}. Tap to see and share your result.`:`5 new ${dailyWho()==="all five languages"?"films from all five languages":dailyWho()+" films"} every day. Everyone gets the same five.`;
   $("optSound").checked=opts.sound;
   const box=$("langs");box.innerHTML="";
   LANGS.filter(([c])=>AVAIL.includes(c)).forEach(([c,name,native])=>{
@@ -519,6 +588,8 @@ function refreshHome(){
   });
   const n=FILMS.filter(f=>opts.langs.includes(f.lang)).length;
   $("langCount").textContent=`${n.toLocaleString()} films`;
+  const names=opts.langs.map(l=>LANG_NAME[l]);
+  $("langSummary").textContent=opts.langs.length===AVAIL.length?`Films in all ${AVAIL.length===5?"five":AVAIL.length} languages`:`${names.length>2?names.slice(0,-1).join(", ")+" and "+names.at(-1):names.join(" and ")} films`;
   $("deepBtn").hidden=pool("deep").length<10;
   setBg(opts.langs);
   showCount();
@@ -530,10 +601,11 @@ function newGame(mode){
   let rnd,films;
   $("play").classList.remove("fire");
   if(mode==="daily"){
-    const t=today(),prev=get("daily_"+t,null);
+    const key=dailyKey(),prev=get("daily_"+key,null);
     if(prev){showResult(prev,true);return}
-    rnd=mulberry32(parseInt(t.replace(/-/g,""),10)*2654435761>>>0);
-    films=AVAIL.map(code=>shuffle(FILMS.filter(f=>f.lang===code&&(f.rank==null||f.rank<=500)),rnd)[0]).filter(Boolean);
+    let h=parseInt(today().replace(/-/g,""),10);for(const c of key)h=Math.imul(h^c.charCodeAt(0),2654435761)>>>0;
+    rnd=mulberry32(h);
+    films=dailyFilms(rnd);
   }else{
     rnd=Math.random;
     const all=pool(mode);
@@ -725,13 +797,13 @@ function endGame(){
   if(G.mode==="daily"){
     const t=today();res.date=t;
     const y=new Date(Date.now()-864e5),ys=y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
-    stats.dStreak=stats.dLast===ys?stats.dStreak+1:1;stats.dLast=t;
-    put("daily_"+t,res);
+    if(stats.dLast!==t)stats.dStreak=stats.dLast===ys?stats.dStreak+1:1;stats.dLast=t;
+    res.who=dailyWho();put("daily_"+dailyKey(),res);
   }
   put("stats",stats);countGame();cur=null;showResult(res,false);
 }
 function shareText(res){
-  const head=res.mode==="daily"?`Filmy Jumble #${dayNo(res.date)}`:`Filmy Jumble (${LABEL[res.mode]})`;
+  const head=res.mode==="daily"?`Filmy Jumble #${dayNo(res.date)}${res.who?" · "+res.who:""}`:`Filmy Jumble (${LABEL[res.mode]})`;
   return `🎬 ${head}\n${res.grid}\n${res.score}/${res.max}\n${SHARE_URL}`;
 }
 let lastRes=null;
@@ -767,6 +839,8 @@ $("dailyBtn").onclick=()=>newGame("daily");
 document.querySelectorAll(".level").forEach(b=>b.onclick=()=>newGame(b.dataset.mode));
 $("optSound").onchange=e=>{opts.sound=e.target.checked;put("opts",opts);if(opts.sound)beep(660,.08)};
 $("howBtn").onclick=()=>openModal("howModal");
+$("langBtn").onclick=()=>openModal("langModal");
+$("langClose").onclick=()=>closeModal("langModal");
 $("howClose").onclick=()=>{closeModal("howModal");opts.seenHow=true;put("opts",opts)};
 $("statsBtn").onclick=()=>{renderStats();openModal("statsModal")};
 $("statsClose").onclick=()=>closeModal("statsModal");
