@@ -92,9 +92,11 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .tool[aria-pressed="true"] small{color:#1B1B17}
 .tool[aria-pressed="true"] .dot{background:#1B1B17;border-color:#1B1B17}
 .tool:disabled{opacity:.4;cursor:default}
-.pool.reshuffle .tile{animation:pop .35s}
+.answer.multi .word,.pool.multi .word{background:rgba(0,0,0,.14);border-radius:10px;padding:5px}
+.pool.multi .word{background:rgba(0,0,0,.22);padding:7px}
+.pool .word{gap:6px}
 .pool{display:flex;flex-direction:column;gap:10px;align-items:center;margin:14px 0}
-.pool .tile{background:var(--gold);color:#1B1B17;box-shadow:0 3px 0 rgba(0,0,0,.3);transition:transform .08s}
+.pool .tile{width:var(--tp,48px);height:calc(var(--tp,48px)*1.15);font-size:calc(var(--tp,48px)*.56);border-radius:8px;background:var(--gold);color:#1B1B17;box-shadow:0 3px 0 rgba(0,0,0,.3);transition:transform .08s}
 .pool .tile:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
 .pool .tile.used{visibility:hidden}
 .msg{text-align:center;min-height:1.6em}
@@ -447,8 +449,19 @@ function newGame(mode){
 }
 function sizeTiles(){
   if(!cur)return;const longest=Math.max(...cur.words.map(w=>w.length));
-  const tw=Math.max(20,Math.min(44,Math.floor((Math.min(window.innerWidth,560)-60)/longest)-4));
-  document.documentElement.style.setProperty("--t",tw+"px");
+  const W=Math.min(document.documentElement.clientWidth||window.innerWidth,560)-32,multi=cur.words.length>1;
+  // Fit each word on one line when the boxes stay a good size; otherwise split it into
+  // evenly sized rows (e.g. 5+5, not 8+2) so boxes never get too small to tap.
+  function fit(avail,gap,min,max){
+    let size=Math.min(max,Math.floor((avail+gap)/longest)-gap),per=longest;
+    if(size<min){const rows=Math.ceil(longest/Math.max(1,Math.floor((avail+gap)/(min+gap))));per=Math.ceil(longest/rows);size=Math.min(max,Math.floor((avail+gap)/per)-gap)}
+    return {size,gap,max:Math.max(1,Math.floor((avail+gap)/(size+gap))),pad:0};
+  }
+  cur.fitA=fit(W-20-(multi?10:0),4,32,44);cur.fitA.pad=multi?10:0;
+  cur.fitP=fit(W-(multi?14:0),6,44,50);cur.fitP.pad=multi?14:0;
+  const r=document.documentElement.style;
+  r.setProperty("--t",cur.fitA.size+"px");r.setProperty("--tp",cur.fitP.size+"px");
+  $("answer").classList.toggle("multi",cur.words.length>1);$("pool").classList.toggle("multi",cur.words.length>1);
 }
 function loadRound(){
   const f=G.films[G.r],words=f.t.toUpperCase().split(" ");
@@ -479,10 +492,15 @@ function renderClues(){
   if(cur.shown.year)add("Released in "+f.y);
 }
 function clue(k,btn){if(done||cur.shown[k])return;cur.shown[k]=true;$(btn).disabled=true;renderClues();updPts();beep(520,.08)}
+function rowWidth(f,len){
+  if(!f)return "";
+  const rows=Math.ceil(len/f.max),per=Math.ceil(len/rows);
+  return (per*(f.size+f.gap)+f.pad)+"px";
+}
 function render(){
   const A=$("answer"),P=$("pool");A.innerHTML="";P.innerHTML="";
   cur.words.forEach((w,wi)=>{
-    const wa=document.createElement("div");wa.className="word";A.appendChild(wa);
+    const wa=document.createElement("div");wa.className="word";wa.style.maxWidth=rowWidth(cur.fitA,w.length);A.appendChild(wa);
     cur.slots[wi].forEach((sl,si)=>{
       const b=document.createElement("button");let cls="tile slot",state="";
       if(sl){cls+=" filled";
@@ -492,7 +510,7 @@ function render(){
       b.setAttribute("aria-label",sl?`${b.textContent}${state}`:"Empty");
       b.onclick=()=>unplace(wi,si);wa.appendChild(b);
     });
-    const wp=document.createElement("div");wp.className="word";
+    const wp=document.createElement("div");wp.className="word";wp.style.maxWidth=rowWidth(cur.fitP,w.length);
     cur.tiles[wi].forEach((tl,ti)=>{
       const b=document.createElement("button");b.className="tile"+(tl.used?" used":"");b.textContent=tl.ch;
       b.setAttribute("aria-label","Letter "+tl.ch);if(tl.used)b.tabIndex=-1;
@@ -525,14 +543,32 @@ function toggleAssist(){
 }
 function reshuffle(){
   if(done)return;
-  cur.tiles.forEach(tiles=>{
-    const free=tiles.filter(t=>!t.used);if(free.length<2)return;
-    const chars=free.map(t=>t.ch),orig=chars.join("");
-    let mixed,n=0;do{mixed=shuffle(chars,Math.random);n++}while(mixed.join("")===orig&&new Set(chars).size>1&&n<20);
-    free.forEach((t,i)=>t.ch=mixed[i]);
+  const P=$("pool");
+  // remember where every letter sits now
+  const old=[...P.children].map(w=>[...w.children].map(t=>t.getBoundingClientRect()));
+  const moves=[];
+  cur.tiles.forEach((tiles,wi)=>{
+    const free=[];tiles.forEach((t,ti)=>{if(!t.used)free.push(ti)});
+    if(free.length<2)return;
+    const chars=free.map(ti=>tiles[ti].ch),idx=chars.map((_,i)=>i);
+    let perm,n=0;
+    do{perm=shuffle(idx,Math.random);n++}while(perm.map(i=>chars[i]).join("")===chars.join("")&&new Set(chars).size>1&&n<20);
+    perm.forEach((from,i)=>{tiles[free[i]].ch=chars[from];moves.push({wi,to:free[i],from:free[from]})});
   });
   beep(520,.05,"triangle");buzz(10);render();
-  const P=$("pool");P.classList.remove("reshuffle");void P.offsetWidth;P.classList.add("reshuffle");
+  if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  // fly each letter from its old spot to its new one with a little hop
+  moves.forEach((m,k)=>{
+    const el=P.children[m.wi]&&P.children[m.wi].children[m.to];if(!el||!el.animate)return;
+    const o=old[m.wi][m.from],nw=el.getBoundingClientRect();
+    const dx=o.left-nw.left,dy=o.top-nw.top,lift=-(34+Math.random()*30),spin=(Math.random()*30-15).toFixed(1);
+    el.animate([
+      {transform:`translate(${dx}px,${dy}px)`},
+      {transform:`translate(${dx*0.5}px,${dy*0.5+lift}px) rotate(${spin}deg) scale(1.12)`,offset:.45},
+      {transform:"translate(0,0) scale(.94)",offset:.85},
+      {transform:"none"}
+    ],{duration:900,delay:k*50,easing:"cubic-bezier(.3,.7,.4,1)",fill:"backwards"});
+  });
 }
 function giveLetter(){
   if(done)return;
@@ -640,7 +676,7 @@ $("letterBtn").onclick=giveLetter;$("shuffleBtn").onclick=reshuffle;$("assistBtn
 $("copyBtn").onclick=copyResult;
 $("againBtn").onclick=()=>newGame(lastRes.mode==="daily"?"easy":lastRes.mode);
 $("homeBtn2").onclick=()=>{refreshHome();show("home")};
-window.addEventListener("resize",sizeTiles);
+window.addEventListener("resize",()=>{if(cur){sizeTiles();render()}});
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){document.querySelectorAll(".modal").forEach(m=>m.hidden=true);return}
   if($("play").hidden||!cur||e.metaKey||e.ctrlKey)return;
