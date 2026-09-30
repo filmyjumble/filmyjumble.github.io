@@ -803,7 +803,7 @@ if("serviceWorker" in navigator&&location.protocol==="https:"&&!IS_APP&&(ON_SITE
 }
 
 /* ================= FIRE ROUND (multiplayer, 60 s) ================= */
-const FIRE_SECS=180,FIRE_MAX=8;
+const FIRE_SECS=180,FIRE_MAX=8,ROOM_HOURS=12;
 const FIRE_LEVELS=[["mixed","Mixed","easy + medium"],["easy","Easy",""],["medium","Medium",""],["hard","Hard",""],["deep","Deep cuts",""]];
 const roomSecs=room=>(room&&room.secs)||FIRE_SECS;
 const mmss=t=>Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
@@ -878,6 +878,7 @@ class FireNet{
   }
   now(){return Date.now()+this.off}
   async create(name,langs){
+    this.name=name;
     for(let i=0;i<6;i++){
       const code=codeGen(),ref=this.db.ref("rooms/"+code),snap=await ref.get();
       if(snap.exists())continue;
@@ -887,21 +888,39 @@ class FireNet{
     throw new Error("Couldn't make a room. Try again.");
   }
   async join(code,name){
+    this.name=name;
     const ref=this.db.ref("rooms/"+code),snap=await ref.get();
     if(!snap.exists())throw new Error("No room with that code.");
     const r=snap.val(),n=Object.keys(r.players||{}).length;
+    if((r.created||0)<this.now()-ROOM_HOURS*3600e3)throw new Error("That room has expired. Ask for a new code.");
     if(!(r.players&&r.players[this.me])&&n>=FIRE_MAX)throw new Error("That room is full.");
     await ref.child("players/"+this.me).set({name,score:0,solved:0,idx:0,lastAt:0});
     this.attach(ref);return code;
   }
-  attach(ref){this.ref=ref;ref.child("players/"+this.me).onDisconnect().remove();ref.on("value",s=>{if(this.cb)this.cb(s.val())})}
+  attach(ref){
+    this.ref=ref;
+    ref.child("players/"+this.me).onDisconnect().remove();
+    ref.on("value",s=>{if(this.cb)this.cb(s.val())});
+    // Phones drop the connection when you switch apps (e.g. to WhatsApp to send the invite).
+    // Firebase then removes you from the room; when the connection comes back, put you back in.
+    this.conn=this.db.ref(".info/connected");
+    this.onConn=s=>{if(s.val()===true&&this.ref){this.ref.child("players/"+this.me).onDisconnect().remove();this.ensureMe()}};
+    this.conn.on("value",this.onConn);
+  }
+  async ensureMe(){
+    if(!this.ref||this.fixing)return;this.fixing=true;
+    try{
+      const me=this.ref.child("players/"+this.me),snap=await me.get();
+      if(this.ref&&!snap.exists())await me.set({name:this.name,score:(FR&&FR.score)||0,solved:(FR&&FR.solved)||0,idx:(G&&G.mode==="fire"&&G.r)||0,lastAt:0});
+    }catch(e){}finally{this.fixing=false}
+  }
   listen(cb){this.cb=cb}
   update(p){if(this.ref)this.ref.child("players/"+this.me).update(p)}
   resetPatch(room){const u={};Object.keys(room.players||{}).forEach(id=>{u[`players/${id}/score`]=0;u[`players/${id}/solved`]=0;u[`players/${id}/idx`]=0;u[`players/${id}/lastAt`]=0});return u}
   start(room){this.ref.update({...this.resetPatch(room),status:"playing",seed:Math.floor(Math.random()*2**31),startAt:this.now()+4000})}
   rematch(room){this.ref.update({...this.resetPatch(room),status:"lobby"})}
   setLevel(l){if(this.ref)this.ref.update({level:l})}
-  leave(){if(!this.ref)return;const ref=this.ref;this.ref=null;this.cb=null;ref.off();ref.child("players/"+this.me).remove().catch(()=>{})}
+  leave(){if(!this.ref)return;const ref=this.ref;this.ref=null;this.cb=null;if(this.conn)this.conn.off("value",this.onConn);ref.off();ref.child("players/"+this.me).remove().catch(()=>{})}
 }
 
 /* --- screens --- */
@@ -942,6 +961,7 @@ function onRoom(room){
   if(!FR)return;
   if(!room){alert("The room was closed.");fireLeave();return}
   FR.room=room;
+  if(net.ensureMe&&room.players&&!room.players[net.me])net.ensureMe();
   const now=net.now(),end=(room.startAt||0)+roomSecs(room)*1000;
   if(room.status==="playing"&&room.seed!==FR.seed&&now<end&&room.players&&room.players[net.me]){startRace(room);return}
   if(room.status==="lobby"&&FR.view!=="fireLobby"&&!FR.racing){FR.seed=null;show("fire");fireView("fireLobby")}
@@ -970,7 +990,7 @@ function renderLobby(room){
   $("roomInfo").textContent=`${durLabel(roomSecs(room))} · ${(room.langs||AVAIL).map(l=>LANG_NAME[l]).join(", ")}${host?"":" · the host picks the level"}`;
   const midGame=room.status==="playing"&&net.now()<(room.startAt||0)+roomSecs(room)*1000;
   $("startBtn").hidden=!host||midGame;
-  $("lobbyNote").textContent=midGame?"A round is in progress. You'll join the next one.":host?(n<2?"Share the code, or start on your own.":`${n} players ready.`):"Waiting for the host to start…";
+  $("lobbyNote").textContent=midGame?"A round is in progress. You'll join the next one.":host?(n<2?"You're in! You don't need the link yourself. Share it, wait for friends to appear here, then tap Start.":`${n} players ready. Tap Start when everyone's here.`):"Waiting for the host to start…";
 }
 function startRace(room){
   FR.seed=room.seed;FR.racing=true;FR.solved=0;FR.score=0;FR.prev={};
@@ -1067,7 +1087,6 @@ $("startBtn").onclick=()=>{if(FR&&FR.room)net.start(FR.room)};
 $("rematchBtn").onclick=()=>{if(FR&&FR.room)net.rematch(FR.room)};
 $("leaveBtn").onclick=fireLeave;$("leaveBtn2").onclick=fireLeave;
 $("joinCode").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"")});
-window.addEventListener("pagehide",()=>{if(net)net.leave()});
 refreshHome();
 const roomParam=new URLSearchParams(location.search).get("room");
 if(roomParam){opts.seenHow=true;put("opts",opts);openFire(roomParam.toUpperCase().slice(0,4))}
