@@ -122,6 +122,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .recap div+div{border-top:1px solid rgba(127,127,127,.25)}
 .recap span{color:var(--muted);font-size:.9rem;white-space:nowrap}
 .btns{display:grid;gap:10px}
+.wa.invite{width:100%;border:none;font:inherit;font-weight:700;cursor:pointer}
 .wa{display:block;text-decoration:none;text-align:center;background:#25D366;color:#08260f;border-radius:10px;padding:13px;font-weight:700}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:.95rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
@@ -220,6 +221,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <label class="row"><span>Sound and vibration</span><input type="checkbox" class="switch" id="optSound"></label>
   </div>
   <div class="links"><button class="link" id="howBtn">How to play</button><button class="link" id="statsBtn">Your stats</button><a class="link" id="privacyLink" href="privacy.html" hidden>Privacy</a></div>
+  <p class="credit">Version 1.6</p>
   <p class="credit" id="tmdbCredit" hidden>Film data from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
 </section>
 
@@ -273,7 +275,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <div id="fireLobby" class="fview" hidden>
     <p class="flabel">Room code</p>
     <div class="roomcode" id="roomCode">----</div>
-    <a class="wa" id="inviteBtn" target="_blank" rel="noopener">Invite on WhatsApp</a>
+    <button class="wa invite" id="inviteBtn">Invite friends</button>
     <p class="flabel" style="margin-top:18px">Players</p>
     <ul class="plist" id="playerList"></ul>
     <p class="flabel" style="margin-top:14px">Films</p>
@@ -894,7 +896,7 @@ class FireNet{
     const r=snap.val(),n=Object.keys(r.players||{}).length;
     if((r.created||0)<this.now()-ROOM_HOURS*3600e3)throw new Error("That room has expired. Ask for a new code.");
     if(!(r.players&&r.players[this.me])&&n>=FIRE_MAX)throw new Error("That room is full.");
-    await ref.child("players/"+this.me).set({name,score:0,solved:0,idx:0,lastAt:0});
+    if(!(r.players&&r.players[this.me]))await ref.child("players/"+this.me).set({name,score:0,solved:0,idx:0,lastAt:0});
     this.attach(ref);return code;
   }
   attach(ref){
@@ -946,6 +948,7 @@ async function fireEnter(kind){
     net.listen(onRoom);
     FR.code=kind==="join"?await net.join($("joinCode").value.trim().toUpperCase(),name):await net.create(name,opts.langs.slice());
     $("fireMsg").textContent="";fireView("fireLobby");
+    if(!FR.practice){put("room",{code:FR.code,at:Date.now()});history.replaceState(null,"",location.pathname+"?room="+FR.code)}
     if(FR.room)onRoom(FR.room);
   }catch(e){console.error(e);$("fireMsg").textContent=e.message&&e.message!=="load"?e.message:"Couldn't connect. Check your internet and try again.";net=null;FR=null}
 }
@@ -973,7 +976,7 @@ function renderLobby(room){
   $("roomCode").textContent=FR.practice?"PRACTICE":FR.code;
   $("inviteBtn").hidden=FR.practice;
   const link=location.origin+location.pathname+"?room="+FR.code;
-  $("inviteBtn").href="https://wa.me/?text="+encodeURIComponent(`🔥 Join my Filmy Jumble fire round! Room code ${FR.code}\n${link}`);
+  FR.invite={text:`🔥 Join my Filmy Jumble fire round! Room code ${FR.code}`,url:link};
   const L=$("playerList");L.innerHTML="";
   ranked(room.players).sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
     const li=document.createElement("li");li.textContent=p.name;
@@ -1073,12 +1076,19 @@ function renderPodium(room){
 }
 function fireLeave(){
   if(FR){clearInterval(FR.timer);FR.racing=false}
-  if(net)net.leave();net=null;FR=null;G=null;cur=null;
+  if(net)net.leave();net=null;FR=null;G=null;cur=null;put("room",null);
   $("play").classList.remove("fire");$("normalStats").hidden=false;$("fireTimer").hidden=true;$("lanes").hidden=true;$("countdown").hidden=true;
   if(location.search.includes("room="))history.replaceState(null,"",location.pathname);
   refreshHome();show("home");
 }
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&net&&net.ensureMe)net.ensureMe()});
 $("fireBtn").onclick=()=>openFire("");
+$("inviteBtn").onclick=async()=>{
+  if(!FR||!FR.invite)return;const {text,url}=FR.invite;
+  // The share sheet keeps this page open, so the host never loses the room
+  if(navigator.share){try{await navigator.share({title:"Filmy Jumble",text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+  location.href="https://wa.me/?text="+encodeURIComponent(text+"\n"+url);
+};
 $("fireHome").onclick=()=>{if(FR&&!confirm("Leave the room?"))return;fireLeave()};
 $("createRoom").onclick=()=>fireEnter("create");
 $("joinRoom").onclick=()=>{if($("joinCode").value.trim().length!==4){$("fireMsg").textContent="Enter the 4-letter room code.";return}fireEnter("join")};
@@ -1088,8 +1098,14 @@ $("rematchBtn").onclick=()=>{if(FR&&FR.room)net.rematch(FR.room)};
 $("leaveBtn").onclick=fireLeave;$("leaveBtn2").onclick=fireLeave;
 $("joinCode").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"")});
 refreshHome();
-const roomParam=new URLSearchParams(location.search).get("room");
-if(roomParam){opts.seenHow=true;put("opts",opts);openFire(roomParam.toUpperCase().slice(0,4))}
+const roomParam=(new URLSearchParams(location.search).get("room")||"").toUpperCase().slice(0,4);
+const savedRoom=get("room",null),savedFresh=savedRoom&&Date.now()-savedRoom.at<ROOM_HOURS*3600e3;
+const rejoin=roomParam||(savedFresh?savedRoom.code:"");
+if(rejoin){
+  opts.seenHow=true;put("opts",opts);openFire(rejoin);
+  // Coming back to a room you were already in: go straight back in, no taps needed
+  if(opts.name&&hasFirebase()&&savedFresh&&savedRoom.code===rejoin)fireEnter("join");
+}
 else if(!opts.seenHow)openModal("howModal");
 </script>
 </body>

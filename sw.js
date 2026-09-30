@@ -1,7 +1,7 @@
 // Filmy Jumble offline support.
-// App files are served from cache instantly and refreshed in the background,
-// so a new film list or game update shows up on the next launch.
-const CACHE = "filmy-jumble-v1";
+// The game page loads fresh from the network when online (saved copy when offline).
+// Other files are served from cache instantly and refreshed in the background.
+const CACHE = "filmy-jumble-v2";
 const SHELL = ["./", "index.html", "films.js", "manifest.webmanifest",
   "icon-192.png", "icon-512.png", "icon-maskable-512.png", "privacy.html"];
 
@@ -19,6 +19,15 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   const isFont = url.host === "fonts.googleapis.com" || url.host === "fonts.gstatic.com";
   if (url.origin !== location.origin && !isFont) return;
+  // The game page itself: always try the network first so updates show up straight away,
+  // falling back to the saved copy when offline.
+  if (req.mode === "navigate" || url.pathname.endsWith("/index.html") || url.pathname.endsWith("/firebase-config.js")) {
+    e.respondWith(fetch(req).then(res => {
+      if (res && res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
+      return res;
+    }).catch(async () => (await caches.match(req, { ignoreSearch: true })) || (await caches.match("index.html")) || Response.error()));
+    return;
+  }
   e.respondWith(caches.open(CACHE).then(async cache => {
     const cached = await cache.match(req, { ignoreSearch: !isFont });
     const fresh = fetch(req).then(res => {
