@@ -135,6 +135,49 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]) #bg::after{opacity:.86}}
 @keyframes drift{to{transform:translate(-50%,-53%) rotate(-8deg)}}
 @media (prefers-reduced-motion:reduce){#bg .collage{animation:none}}
+/* Fire round */
+.firecard{display:block;width:100%;text-align:left;margin:12px 0 0;background:linear-gradient(135deg,#c0392b,#e67e22);color:#fff;border:none;border-radius:16px;padding:16px 20px;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.28)}
+.firecard:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+.firecard strong{display:block;font-family:"Rozha One",serif;font-weight:400;font-size:1.45rem;line-height:1.1}
+.firecard span{font-size:.95rem}
+.timer{font-family:"Rozha One",serif;font-size:2rem;line-height:1;color:var(--gold);min-width:64px;text-align:right}
+.timer.low{color:var(--red);animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.12)}}
+#play.fire .clue,#play.fire #assistBtn,#play.fire .progress,#play.fire #ptsLbl,#play.fire .clues{display:none}
+#play.fire .controls{grid-template-columns:1fr 1fr}
+.lanes{background:var(--panel);border-radius:12px;padding:8px 12px;margin:10px 0 4px;display:grid;gap:4px}
+.lane{display:grid;grid-template-columns:20px 84px 1fr 26px;align-items:center;gap:8px;font-size:.88rem;line-height:1.2}
+.lane .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lane.me .nm{color:var(--gold);font-weight:700}
+.lane .bar{height:8px;border-radius:4px;background:var(--slot);overflow:hidden;border:none;padding:0}
+.lane .bar i{display:block;height:100%;background:var(--gold);border-radius:4px;transition:width .4s}
+.lane.me .bar i{background:var(--ok)}
+.lane .n{text-align:right;font-weight:700}
+.lane.flash{animation:laneflash .6s}
+@keyframes laneflash{30%{background:rgba(216,169,58,.25)}}
+.countdown{position:fixed;inset:0;display:grid;place-items:center;background:var(--scrim);z-index:20;font-family:"Rozha One",serif;font-size:7rem;color:var(--gold)}
+.countdown[hidden]{display:none}
+.fview{padding-top:14px}
+.fire-intro{color:var(--muted);margin:4px 0 18px}
+.flabel{color:var(--muted);font-size:.9rem;margin:0 0 6px}
+.finput{width:100%;font:inherit;font-size:1.1rem;padding:12px 14px 9px;border-radius:10px;border:2px solid var(--gold);background:var(--bg);color:var(--paper);margin-bottom:14px}
+.finput.code{text-transform:uppercase;letter-spacing:.3em;font-weight:700;margin:0}
+.wide{width:100%;margin-bottom:10px}
+.joinrow{display:grid;grid-template-columns:1fr 100px;gap:8px;margin-bottom:22px}
+.fnote{color:var(--muted);font-size:.9rem;text-align:center}
+.fmsg{color:var(--red);text-align:center;min-height:1.4em}
+.roomcode{font-family:"Rozha One",serif;font-size:3.4rem;letter-spacing:.2em;color:var(--gold);text-align:center;line-height:1.1;margin-bottom:12px}
+.plist{list-style:none;padding:0;margin:0 0 10px;background:var(--panel);border-radius:12px}
+.plist li{padding:10px 14px;display:flex;justify-content:space-between}
+.plist li+li{border-top:1px solid rgba(127,127,127,.25)}
+.plist small{color:var(--muted)}
+.podium-h{font-family:"Rozha One",serif;font-weight:400;color:var(--gold);font-size:2.4rem;text-align:center;margin:6px 0 12px}
+.podium{list-style:none;padding:0;margin:0 0 20px;background:var(--panel);border-radius:14px}
+.podium li{display:grid;grid-template-columns:36px 1fr auto;align-items:center;padding:12px 14px;font-size:1.05rem}
+.podium li+li{border-top:1px solid rgba(127,127,127,.25)}
+.podium li.me{color:var(--gold);font-weight:700}
+.podium .medal{font-size:1.4rem}
+.podium b{font-family:"Rozha One",serif;font-weight:400;font-size:1.4rem}
 /* Modal */
 .modal{position:fixed;inset:0;background:var(--scrim);display:grid;place-items:center;padding:20px;z-index:10}
 .modal[hidden]{display:none}
@@ -157,6 +200,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <p class="brand-ml">Movie titles, all mixed up. Malayalam, Tamil, Telugu, Hindi and English.</p>
   <p class="playcount" id="playCount" hidden></p>
   <button class="daily" id="dailyBtn"><strong id="dailyTitle">Today's five</strong><span id="dailySub">One film from each language, the same for everyone.</span></button>
+  <button class="firecard" id="fireBtn"><strong>🔥 Fire round</strong><span>Race your friends: 60 seconds, as many films as you can.</span></button>
   <div class="levels">
     <button class="level" data-mode="easy"><strong>Easy</strong><span>short, well-known</span></button>
     <button class="level" data-mode="medium"><strong>Medium</strong><span>popular films</span></button>
@@ -176,8 +220,11 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <div class="bar">
     <button class="home-btn" id="quitBtn">Home</button>
     <span class="bar-title" id="modeTitle"></span>
-    <div class="stats">Score <b id="score">0</b><br>Streak <b id="streak">0</b></div>
+    <div class="stats" id="normalStats">Score <b id="score">0</b><br>Streak <b id="streak">0</b></div>
+    <div class="timer" id="fireTimer" hidden>60</div>
   </div>
+  <div class="lanes" id="lanes" hidden aria-live="off"></div>
+  <div class="countdown" id="countdown" hidden></div>
   <div class="progress" id="progress"></div>
   <div class="meta"><span id="roundLbl"></span><span id="ptsLbl"></span></div>
   <div class="clues" id="clues" aria-live="polite"></div>
@@ -189,12 +236,51 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   </div>
   <div class="pool" id="pool"></div>
   <div class="controls">
-    <button class="act" id="actorBtn">Actor<small>−2</small></button>
-    <button class="act" id="dirBtn">Director<small>−2</small></button>
-    <button class="act" id="yearBtn">Year<small>−1</small></button>
-    <button class="act" id="letterBtn">Letter<small>−3</small></button>
+    <button class="act clue" id="actorBtn">Actor<small>−2</small></button>
+    <button class="act clue" id="dirBtn">Director<small>−2</small></button>
+    <button class="act clue" id="yearBtn">Year<small>−1</small></button>
+    <button class="act clue" id="letterBtn">Letter<small>−3</small></button>
     <button class="act" id="clearBtn">Clear</button>
     <button class="act primary" id="skipBtn">Skip</button>
+  </div>
+</section>
+
+<section id="fire" hidden>
+  <div class="bar">
+    <button class="home-btn" id="fireHome">Home</button>
+    <span class="bar-title">🔥 Fire round</span>
+    <span></span>
+  </div>
+  <div id="fireSetup" class="fview">
+    <p class="fire-intro">Everyone gets the same jumbled films. You have 60 seconds. Watch your friends' scores climb live.</p>
+    <label class="flabel" for="fireName">Your nickname</label>
+    <input class="finput" id="fireName" maxlength="16" autocomplete="nickname" placeholder="e.g. Aachi">
+    <div id="onlineBox">
+      <button class="act primary wide" id="createRoom">Create a room</button>
+      <div class="joinrow"><input class="finput code" id="joinCode" maxlength="4" placeholder="CODE" autocapitalize="characters" autocomplete="off"><button class="act" id="joinRoom">Join</button></div>
+    </div>
+    <p class="fnote" id="onlineOff" hidden>Online rooms aren't switched on yet. Try a practice round against computer players.</p>
+    <button class="act wide" id="practiceBtn">Practice vs computer players</button>
+    <p class="fmsg" id="fireMsg" aria-live="polite"></p>
+  </div>
+  <div id="fireLobby" class="fview" hidden>
+    <p class="flabel">Room code</p>
+    <div class="roomcode" id="roomCode">----</div>
+    <a class="wa" id="inviteBtn" target="_blank" rel="noopener">Invite on WhatsApp</a>
+    <p class="flabel" style="margin-top:18px">Players</p>
+    <ul class="plist" id="playerList"></ul>
+    <p class="fnote" id="lobbyNote"></p>
+    <button class="act primary wide" id="startBtn">Start the round</button>
+    <button class="act wide" id="leaveBtn">Leave room</button>
+  </div>
+  <div id="firePodium" class="fview" hidden>
+    <h2 class="podium-h">Time's up!</h2>
+    <ol class="podium" id="podium"></ol>
+    <p class="flabel">Films this round</p>
+    <div class="recap" id="fireFilms"></div>
+    <button class="act primary wide" id="rematchBtn">Play again</button>
+    <p class="fnote" id="rematchNote" hidden>Waiting for the host to start the next round…</p>
+    <button class="act wide" id="leaveBtn2">Leave room</button>
   </div>
 </section>
 
@@ -240,6 +326,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 <div class="toast" id="toast" role="status"></div>
 
 <script src="films.js" onerror="void 0"></script>
+<script src="firebase-config.js" onerror="void 0"></script>
 <script>
 const IS_APP=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
 const PLAY_URL="https://play.google.com/store/apps/details?id=com.filmyjumble.app";
@@ -400,7 +487,7 @@ function countGame(){
   countAt=0;
 }
 /* screens */
-function show(id){["home","play","result"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0)}
+function show(id){["home","play","result","fire"].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0)}
 function refreshHome(){
   const t=today(),done=get("daily_"+t,null);
   $("dailyTitle").textContent=`Today's five #${dayNo(t)}`;
@@ -428,6 +515,7 @@ function refreshHome(){
 let G=null,cur=null,done=false;
 function newGame(mode){
   let rnd,films;
+  $("play").classList.remove("fire");
   if(mode==="daily"){
     const t=today(),prev=get("daily_"+t,null);
     if(prev){showResult(prev,true);return}
@@ -469,7 +557,7 @@ function loadRound(){
     tiles:words.map(w=>scramble(w,G.rnd).map(ch=>({ch,used:false}))),
     slots:words.map(w=>Array(w.length).fill(null))};
   done=false;sizeTiles();setBg([f.lang]);
-  $("roundLbl").textContent=`Film ${G.r+1} of ${G.films.length} · ${LANG_NAME[f.lang]}`;
+  $("roundLbl").textContent=G.mode==="fire"?`Film ${G.r+1} · ${LANG_NAME[f.lang]}`:`Film ${G.r+1} of ${G.films.length} · ${LANG_NAME[f.lang]}`;
   $("msg").textContent="";$("msg").className="msg";
   $("answer").classList.remove("win","pop");
   ["actorBtn","dirBtn","yearBtn","letterBtn","clearBtn","shuffleBtn","assistBtn"].forEach(b=>$(b).disabled=false);
@@ -586,6 +674,7 @@ function check(){
   if(cur.slots.some(row=>row.includes(null)))return;
   const guess=cur.slots.map((row,wi)=>row.map(sl=>cur.tiles[wi][sl.ti].ch).join("")).join(" ");
   if(guess===cur.words.join(" ")){
+    if(G.mode==="fire"){fireSolved();return}
     const pts=roundPts(),clean=pts===10;
     G.score+=pts;G.streak++;finish(true,`${cur.f.t}! +${pts}`,clean?"🟩":"🟨",pts);
     beep(660,.1);setTimeout(()=>beep(880,.16),90);buzz([15,40,25]);
@@ -611,6 +700,7 @@ function finish(won,text,mark,pts){
   $("skipBtn").focus({preventScroll:true});
 }
 function next(){
+  if(G&&G.mode==="fire"){fireSkip();return}
   if(!done){finish(false,`It was ${cur.f.t}.`,"🟥",0);beep(220,.2);return}
   G.r++;if(G.r<G.films.length)loadRound();else endGame();
 }
@@ -668,7 +758,9 @@ $("howClose").onclick=()=>{closeModal("howModal");opts.seenHow=true;put("opts",o
 $("statsBtn").onclick=()=>{renderStats();openModal("statsModal")};
 $("statsClose").onclick=()=>closeModal("statsModal");
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m){m.hidden=true;if(m.id==="howModal"){opts.seenHow=true;put("opts",opts)}}}));
-$("quitBtn").onclick=()=>{if(G&&G.r>0&&!confirm("Leave this game? Your progress will be lost."))return;cur=null;refreshHome();show("home")};
+$("quitBtn").onclick=()=>{
+  if(G&&G.mode==="fire"){if(!confirm("Leave the fire round?"))return;fireLeave();return}
+  if(G&&G.r>0&&!confirm("Leave this game? Your progress will be lost."))return;cur=null;refreshHome();show("home")};
 $("actorBtn").onclick=()=>clue("actor","actorBtn");
 $("dirBtn").onclick=()=>clue("dir","dirBtn");
 $("yearBtn").onclick=()=>clue("year","yearBtn");
@@ -680,7 +772,7 @@ window.addEventListener("resize",()=>{if(cur){sizeTiles();render()}});
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"){document.querySelectorAll(".modal").forEach(m=>m.hidden=true);return}
   if($("play").hidden||!cur||e.metaKey||e.ctrlKey)return;
-  if(done&&e.key==="Enter"){e.preventDefault();next();return}
+  if(done&&e.key==="Enter"&&G.mode!=="fire"){e.preventDefault();next();return}
   if(done)return;
   if(e.key==="Backspace"){e.preventDefault();for(let wi=cur.slots.length-1;wi>=0;wi--){const row=cur.slots[wi];for(let i=row.length-1;i>=0;i--){if(row[i]&&!row[i].locked){unplace(wi,i);return}}}return}
   const ch=e.key.toUpperCase();if(!/^[A-Z]$/.test(ch))return;
@@ -698,8 +790,257 @@ if(ON_SITE||STANDALONE){$("privacyLink").hidden=false}
 if("serviceWorker" in navigator&&location.protocol==="https:"&&!IS_APP&&(ON_SITE||STANDALONE)){
   window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
+
+/* ================= FIRE ROUND (multiplayer, 60 s) ================= */
+const FIRE_SECS=60,FIRE_MAX=8;
+const hasFirebase=()=>!!(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.databaseURL&&(ON_SITE||STANDALONE));
+let net=null,FR=null; // FR = local fire state
+function fireFilms(seed,langs){
+  const rnd=mulberry32(seed>>>0);
+  let pool=FILMS.filter(f=>langs.includes(f.lang)&&(f.lvl==="easy"||f.lvl==="medium")&&(f.rank==null||f.rank<=1500));
+  if(pool.length<40)pool=FILMS.filter(f=>langs.includes(f.lang)&&f.lvl!=="deep");
+  return shuffle(pool,rnd).slice(0,60);
+}
+function codeGen(){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let c="";for(let i=0;i<4;i++)c+=A[Math.floor(Math.random()*A.length)];return c}
+
+/* --- practice: local room with computer players --- */
+class BotNet{
+  constructor(){this.me="me";this.t=[];this.room=null;this.cb=null}
+  now(){return Date.now()}
+  async create(name,langs){
+    const bots=[["Meera",7],["Rahul",9],["Anu",11]];
+    this.room={code:"PRAC",host:"me",status:"lobby",langs,players:{me:{name,solved:0,idx:0,lastAt:0}}};
+    bots.forEach(([n,sp],i)=>this.room.players["bot"+i]={name:n+" 🤖",solved:0,idx:0,lastAt:0,sp});
+    this.emit();return "PRAC";
+  }
+  listen(cb){this.cb=cb;this.emit()}
+  emit(){if(this.cb&&this.room)this.cb(JSON.parse(JSON.stringify(this.room)))}
+  update(p){Object.assign(this.room.players.me,p);this.emit()}
+  reset(){Object.values(this.room.players).forEach(p=>{p.solved=0;p.idx=0;p.lastAt=0})}
+  start(){
+    this.clear();this.reset();
+    this.room.status="playing";this.room.seed=Math.floor(Math.random()*2**31);this.room.startAt=this.now()+3500;this.emit();
+    const end=this.room.startAt+FIRE_SECS*1000;
+    Object.entries(this.room.players).forEach(([id,p])=>{
+      if(!p.sp)return;
+      const step=()=>{
+        const wait=(p.sp*0.6+Math.random()*p.sp*0.8)*1000,at=this.now()+wait;
+        if(at>end)return;
+        this.t.push(setTimeout(()=>{
+          const q=this.room.players[id];if(!q)return;
+          q.idx++;if(Math.random()<0.85){q.solved++;q.lastAt=this.now()}
+          this.emit();step();
+        },wait));
+      };
+      this.t.push(setTimeout(step,this.room.startAt-this.now()));
+    });
+  }
+  rematch(){this.clear();this.reset();this.room.status="lobby";this.emit()}
+  clear(){this.t.forEach(clearTimeout);this.t=[]}
+  leave(){this.clear();this.cb=null}
+}
+
+/* --- online: Firebase Realtime Database --- */
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("load"));document.head.appendChild(s)})}
+class FireNet{
+  constructor(){this.off=0;this.ref=null;this.cb=null}
+  async init(){
+    if(!window.firebase){
+      const v="10.12.2",b=`https://www.gstatic.com/firebasejs/${v}/`;
+      await loadScript(b+"firebase-app-compat.js");
+      await Promise.all([loadScript(b+"firebase-auth-compat.js"),loadScript(b+"firebase-database-compat.js")]);
+    }
+    if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
+    const auth=firebase.auth();if(!auth.currentUser)await auth.signInAnonymously();
+    this.me=auth.currentUser.uid;this.db=firebase.database();
+    this.db.ref(".info/serverTimeOffset").on("value",s=>{this.off=s.val()||0});
+  }
+  now(){return Date.now()+this.off}
+  async create(name,langs){
+    for(let i=0;i<6;i++){
+      const code=codeGen(),ref=this.db.ref("rooms/"+code),snap=await ref.get();
+      if(snap.exists())continue;
+      await ref.set({host:this.me,status:"lobby",langs,created:this.now(),players:{[this.me]:{name,solved:0,idx:0,lastAt:0}}});
+      this.attach(ref);return code;
+    }
+    throw new Error("Couldn't make a room. Try again.");
+  }
+  async join(code,name){
+    const ref=this.db.ref("rooms/"+code),snap=await ref.get();
+    if(!snap.exists())throw new Error("No room with that code.");
+    const r=snap.val(),n=Object.keys(r.players||{}).length;
+    if(!(r.players&&r.players[this.me])&&n>=FIRE_MAX)throw new Error("That room is full.");
+    await ref.child("players/"+this.me).set({name,solved:0,idx:0,lastAt:0});
+    this.attach(ref);return code;
+  }
+  attach(ref){this.ref=ref;ref.child("players/"+this.me).onDisconnect().remove();ref.on("value",s=>{if(this.cb)this.cb(s.val())})}
+  listen(cb){this.cb=cb}
+  update(p){if(this.ref)this.ref.child("players/"+this.me).update(p)}
+  resetPatch(room){const u={};Object.keys(room.players||{}).forEach(id=>{u[`players/${id}/solved`]=0;u[`players/${id}/idx`]=0;u[`players/${id}/lastAt`]=0});return u}
+  start(room){this.ref.update({...this.resetPatch(room),status:"playing",seed:Math.floor(Math.random()*2**31),startAt:this.now()+4000})}
+  rematch(room){this.ref.update({...this.resetPatch(room),status:"lobby"})}
+  leave(){if(!this.ref)return;const ref=this.ref;this.ref=null;this.cb=null;ref.off();ref.child("players/"+this.me).remove().catch(()=>{})}
+}
+
+/* --- screens --- */
+function fireView(v){["fireSetup","fireLobby","firePodium"].forEach(id=>$(id).hidden=id!==v);if(FR)FR.view=v}
+function openFire(code){
+  $("play").classList.remove("fire");
+  $("fireName").value=opts.name||"";$("joinCode").value=code||"";$("fireMsg").textContent="";
+  const online=hasFirebase();$("onlineBox").hidden=!online;$("onlineOff").hidden=online;
+  show("fire");fireView("fireSetup");setBg(opts.langs);
+}
+function needName(){
+  const n=$("fireName").value.trim().slice(0,16);
+  if(!n){$("fireMsg").textContent="Enter a nickname first.";$("fireName").focus();return null}
+  opts.name=n;put("opts",opts);return n;
+}
+async function fireEnter(kind){
+  const name=needName();if(!name)return;
+  $("fireMsg").textContent=kind==="practice"?"":"Connecting…";
+  try{
+    net=kind==="practice"?new BotNet():new FireNet();
+    if(net.init)await net.init();
+    FR={code:"",room:null,seed:null,solved:0,view:"fireLobby",timer:null,prev:{},practice:kind==="practice"};
+    net.listen(onRoom);
+    FR.code=kind==="join"?await net.join($("joinCode").value.trim().toUpperCase(),name):await net.create(name,opts.langs.slice());
+    $("fireMsg").textContent="";fireView("fireLobby");
+    if(FR.room)onRoom(FR.room);
+  }catch(e){console.error(e);$("fireMsg").textContent=e.message&&e.message!=="load"?e.message:"Couldn't connect. Check your internet and try again.";net=null;FR=null}
+}
+function isHost(room){
+  if(!room||!room.players)return false;
+  if(room.players[room.host])return room.host===net.me;
+  return Object.keys(room.players).sort()[0]===net.me; // host left: next player takes over
+}
+function ranked(players){
+  return Object.entries(players||{}).map(([id,p])=>({id,...p})).sort((a,b)=>(b.solved-a.solved)||((a.lastAt||9e15)-(b.lastAt||9e15))||a.name.localeCompare(b.name));
+}
+function onRoom(room){
+  if(!FR)return;
+  if(!room){alert("The room was closed.");fireLeave();return}
+  FR.room=room;
+  const now=net.now(),end=(room.startAt||0)+FIRE_SECS*1000;
+  if(room.status==="playing"&&room.seed!==FR.seed&&now<end&&room.players&&room.players[net.me]){startRace(room);return}
+  if(room.status==="lobby"&&FR.view!=="fireLobby"&&!FR.racing){FR.seed=null;show("fire");fireView("fireLobby")}
+  if(FR.racing)renderLanes(room);
+  if(FR.view==="fireLobby")renderLobby(room);
+  if(FR.view==="firePodium")renderPodium(room);
+}
+function renderLobby(room){
+  $("roomCode").textContent=FR.practice?"PRACTICE":FR.code;
+  $("inviteBtn").hidden=FR.practice;
+  const link=location.origin+location.pathname+"?room="+FR.code;
+  $("inviteBtn").href="https://wa.me/?text="+encodeURIComponent(`🔥 Join my Filmy Jumble fire round! Room code ${FR.code}\n${link}`);
+  const L=$("playerList");L.innerHTML="";
+  ranked(room.players).sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
+    const li=document.createElement("li");li.textContent=p.name;
+    const sm=document.createElement("small");sm.textContent=(p.id===room.host?"host":"")+(p.id===net.me?(p.id===room.host?" · you":"you"):"");
+    li.appendChild(sm);L.appendChild(li);
+  });
+  const host=isHost(room),n=Object.keys(room.players||{}).length;
+  const midGame=room.status==="playing"&&net.now()<(room.startAt||0)+FIRE_SECS*1000;
+  $("startBtn").hidden=!host||midGame;
+  $("lobbyNote").textContent=midGame?"A round is in progress. You'll join the next one.":host?(n<2?"Share the code, or start on your own.":`${n} players ready.`):"Waiting for the host to start…";
+}
+function startRace(room){
+  FR.seed=room.seed;FR.racing=true;FR.solved=0;FR.prev={};
+  G={mode:"fire",films:fireFilms(room.seed,room.langs||AVAIL),rnd:mulberry32((room.seed+7)>>>0),r:0,score:0,streak:0,marks:[],log:[]};
+  $("play").classList.add("fire");$("modeTitle").textContent="🔥 Fire round";
+  $("normalStats").hidden=true;$("fireTimer").hidden=false;$("lanes").hidden=false;
+  show("play");loadRound();done=true;renderLanes(room);
+  clearInterval(FR.timer);FR.timer=setInterval(tick,150);tick();
+}
+function tick(){
+  if(!FR||!FR.room)return;
+  const now=net.now(),start=FR.room.startAt,left=start+FIRE_SECS*1000-now,cd=$("countdown");
+  if(now<start){const n=Math.ceil((start-now)/1000);if(cd.textContent!==String(n)){cd.textContent=n;beep(440,.08)}cd.hidden=false;$("fireTimer").textContent=FIRE_SECS;return}
+  if(!cd.hidden){cd.hidden=true;beep(880,.15);done=false;render()}
+  const secs=Math.max(0,Math.ceil(left/1000)),T=$("fireTimer");
+  T.textContent=secs;T.classList.toggle("low",secs<=10);
+  if(left<=0)fireEnd();
+}
+function fireSolved(){
+  FR.solved++;
+  net.update({solved:FR.solved,idx:G.r+1,lastAt:net.now()});
+  G.log.push({t:cur.f.t,lang:cur.f.lang,pts:1});
+  done=true;render();$("answer").classList.add("win");
+  $("msg").textContent=`${cur.f.t}! 🔥`;$("msg").className="msg ok";
+  beep(660,.1);setTimeout(()=>beep(880,.14),90);buzz([15,40,25]);
+  setTimeout(fireNext,450);
+}
+function fireSkip(){
+  if(done||!FR||!FR.racing)return;
+  done=true;G.log.push({t:cur.f.t,lang:cur.f.lang,pts:0});
+  net.update({idx:G.r+1});
+  $("msg").textContent=`It was ${cur.f.t}`;$("msg").className="msg bad";beep(220,.12);
+  setTimeout(fireNext,650);
+}
+function fireNext(){
+  if(!FR||!FR.racing)return;
+  G.r++;if(G.r>=G.films.length){fireEnd();return}
+  loadRound();$("roundLbl").textContent=`Film ${G.r+1} · ${LANG_NAME[G.films[G.r].lang]}`;
+}
+function renderLanes(room){
+  const list=ranked(room.players),top=Math.max(5,...list.map(p=>p.solved||0)),L=$("lanes");
+  L.innerHTML="";
+  list.slice(0,6).forEach((p,i)=>{
+    const d=document.createElement("div");d.className="lane"+(p.id===net.me?" me":"");
+    const prev=FR.prev[p.id]||0;
+    if(p.id!==net.me&&(p.solved||0)>prev){d.classList.add("flash");if(FR.racing&&!done)beep(990,.04,"triangle")}
+    FR.prev[p.id]=p.solved||0;
+    d.innerHTML=`<span>${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm"></span><span class="bar"><i style="width:${Math.round((p.solved||0)/top*100)}%"></i></span><span class="n">${p.solved||0}</span>`;
+    d.querySelector(".nm").textContent=p.id===net.me?"You":p.name;
+    L.appendChild(d);
+  });
+}
+function fireEnd(){
+  if(!FR||!FR.racing)return;
+  FR.racing=false;done=true;clearInterval(FR.timer);
+  net.update({solved:FR.solved,done:true});
+  $("countdown").hidden=true;$("fireTimer").classList.remove("low");
+  $("msg").textContent="⏰ Time's up!";$("msg").className="msg bad";render();
+  beep(330,.3,"square");buzz([60,60,60]);
+  countGame();
+  setTimeout(()=>{if(!FR)return;show("fire");fireView("firePodium");renderPodium(FR.room);setBg(FR.room.langs||AVAIL)},1600);
+}
+function renderPodium(room){
+  const list=ranked(room.players),P=$("podium");P.innerHTML="";
+  list.forEach((p,i)=>{
+    const li=document.createElement("li");if(p.id===net.me)li.className="me";
+    li.innerHTML=`<span class="medal">${["🥇","🥈","🥉"][i]||i+1}</span><span class="nm"></span><b>${p.solved||0}</b>`;
+    li.querySelector(".nm").textContent=p.id===net.me?`${p.name} (you)`:p.name;P.appendChild(li);
+  });
+  const reached=Math.max(1,...list.map(p=>p.idx||0),G&&G.mode==="fire"?G.r+1:1);
+  const R=$("fireFilms");R.innerHTML="";
+  (G&&G.mode==="fire"?G.films:[]).slice(0,reached).forEach((f,i)=>{
+    const d=document.createElement("div"),a=document.createElement("strong"),b=document.createElement("span");
+    a.textContent=f.t;const sm=document.createElement("small");sm.className="lang";sm.textContent=" "+LANG_NAME[f.lang];a.appendChild(sm);
+    const mine=G.log[i];b.textContent=mine?(mine.pts?"✓ solved":"skipped"):"";d.append(a,b);R.appendChild(d);
+  });
+  const host=isHost(room);$("rematchBtn").hidden=!host;$("rematchNote").hidden=host;
+}
+function fireLeave(){
+  if(FR){clearInterval(FR.timer);FR.racing=false}
+  if(net)net.leave();net=null;FR=null;G=null;cur=null;
+  $("play").classList.remove("fire");$("normalStats").hidden=false;$("fireTimer").hidden=true;$("lanes").hidden=true;$("countdown").hidden=true;
+  if(location.search.includes("room="))history.replaceState(null,"",location.pathname);
+  refreshHome();show("home");
+}
+$("fireBtn").onclick=()=>openFire("");
+$("fireHome").onclick=()=>{if(FR&&!confirm("Leave the room?"))return;fireLeave()};
+$("createRoom").onclick=()=>fireEnter("create");
+$("joinRoom").onclick=()=>{if($("joinCode").value.trim().length!==4){$("fireMsg").textContent="Enter the 4-letter room code.";return}fireEnter("join")};
+$("practiceBtn").onclick=()=>fireEnter("practice");
+$("startBtn").onclick=()=>{if(FR&&FR.room)net.start(FR.room)};
+$("rematchBtn").onclick=()=>{if(FR&&FR.room)net.rematch(FR.room)};
+$("leaveBtn").onclick=fireLeave;$("leaveBtn2").onclick=fireLeave;
+$("joinCode").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"")});
+window.addEventListener("pagehide",()=>{if(net)net.leave()});
 refreshHome();
-if(!opts.seenHow)openModal("howModal");
+const roomParam=new URLSearchParams(location.search).get("room");
+if(roomParam){opts.seenHow=true;put("opts",opts);openFire(roomParam.toUpperCase().slice(0,4))}
+else if(!opts.seenHow)openModal("howModal");
 </script>
 </body>
 </html>
