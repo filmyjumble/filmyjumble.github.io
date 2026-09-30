@@ -84,6 +84,15 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
 .slot.right{background:var(--ok);color:#fff}
 .slot.wrong{background:var(--red);color:#fff}
 .slot.locked{background:var(--gold);color:#1B1B17;cursor:default}
+.tools{display:flex;justify-content:center;gap:10px;margin:6px 0 2px}
+.tool{display:flex;align-items:center;gap:7px;background:var(--bg);border:2px solid var(--gold);border-radius:999px;padding:7px 14px 5px;cursor:pointer;font-weight:700;font-size:.92rem}
+.tool small{font-weight:400;color:var(--muted)}
+.tool .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--gold);margin-top:-2px}
+.tool[aria-pressed="true"]{background:var(--gold);color:#1B1B17}
+.tool[aria-pressed="true"] small{color:#1B1B17}
+.tool[aria-pressed="true"] .dot{background:#1B1B17;border-color:#1B1B17}
+.tool:disabled{opacity:.4;cursor:default}
+.pool.reshuffle .tile{animation:pop .35s}
 .pool{display:flex;flex-direction:column;gap:10px;align-items:center;margin:14px 0}
 .pool .tile{background:var(--gold);color:#1B1B17;box-shadow:0 3px 0 rgba(0,0,0,.3);transition:transform .08s}
 .pool .tile:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
@@ -155,7 +164,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <div class="langhead"><span>Film languages</span><span id="langCount"></span></div>
   <div class="langs" id="langs" role="group" aria-label="Film languages"></div>
   <div class="settings">
-    <label class="row"><span>Assisted mode<small>Green for the right spot, red for the wrong one. Costs 3 points a film.</small></span><input type="checkbox" class="switch" id="optAssist"></label>
     <label class="row"><span>Sound and vibration</span><input type="checkbox" class="switch" id="optSound"></label>
   </div>
   <div class="links"><button class="link" id="howBtn">How to play</button><button class="link" id="statsBtn">Your stats</button><a class="link" id="privacyLink" href="privacy.html" hidden>Privacy</a></div>
@@ -173,6 +181,10 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
   <div class="clues" id="clues" aria-live="polite"></div>
   <div class="answer" id="answer"></div>
   <div class="msg" id="msg" aria-live="polite"></div>
+  <div class="tools">
+    <button class="tool" id="shuffleBtn" aria-label="Shuffle the remaining letters">🔀 Shuffle</button>
+    <button class="tool" id="assistBtn" aria-pressed="false"><span class="dot"></span>Assisted <small>−3</small></button>
+  </div>
   <div class="pool" id="pool"></div>
   <div class="controls">
     <button class="act" id="actorBtn">Actor<small>−2</small></button>
@@ -207,7 +219,8 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(-
     <ul>
       <li>A clean solve is worth 10 points.</li>
       <li>Stuck? Reveal the actor (−2), director (−2) or year (−1), or place the next correct letter (−3).</li>
-      <li>Assisted mode colours each letter as you go:</li>
+      <li>Tap 🔀 Shuffle to mix the remaining letters again. It's free.</li>
+      <li>Turn on Assisted for any film (−3) to colour each letter as you go:</li>
     </ul>
     <div class="demo" aria-hidden="true"><span class="tile slot right">P</span><span class="tile slot right">R</span><span class="tile slot wrong">M</span><span class="tile slot wrong">E</span><span class="tile slot"></span><span class="tile slot"></span></div>
     <p>Today's five has one film from each language and is the same for everyone, so you can compare scores with friends.</p>
@@ -390,7 +403,7 @@ function refreshHome(){
   const t=today(),done=get("daily_"+t,null);
   $("dailyTitle").textContent=`Today's five #${dayNo(t)}`;
   $("dailySub").textContent=done?`Played: ${done.score}/50 ${done.grid}. Tap to see and share your result.`:"One film from each language, the same for everyone.";
-  $("optAssist").checked=opts.assist;$("optSound").checked=opts.sound;
+  $("optSound").checked=opts.sound;
   const box=$("langs");box.innerHTML="";
   LANGS.filter(([c])=>AVAIL.includes(c)).forEach(([c,name,native])=>{
     const b=document.createElement("button");b.className="chip";
@@ -439,14 +452,15 @@ function sizeTiles(){
 }
 function loadRound(){
   const f=G.films[G.r],words=f.t.toUpperCase().split(" ");
-  cur={f,words,shown:{},hints:0,assistUsed:opts.assist,
+  cur={f,words,shown:{},hints:0,assist:false,assistUsed:false,
     tiles:words.map(w=>scramble(w,G.rnd).map(ch=>({ch,used:false}))),
     slots:words.map(w=>Array(w.length).fill(null))};
   done=false;sizeTiles();setBg([f.lang]);
   $("roundLbl").textContent=`Film ${G.r+1} of ${G.films.length} · ${LANG_NAME[f.lang]}`;
   $("msg").textContent="";$("msg").className="msg";
   $("answer").classList.remove("win","pop");
-  ["actorBtn","dirBtn","yearBtn","letterBtn","clearBtn"].forEach(b=>$(b).disabled=false);
+  ["actorBtn","dirBtn","yearBtn","letterBtn","clearBtn","shuffleBtn","assistBtn"].forEach(b=>$(b).disabled=false);
+  $("assistBtn").setAttribute("aria-pressed","false");
   $("skipBtn").textContent="Skip";
   $("score").textContent=G.score;$("streak").textContent=G.streak;
   renderProgress();renderClues();render();updPts();
@@ -473,7 +487,7 @@ function render(){
       const b=document.createElement("button");let cls="tile slot",state="";
       if(sl){cls+=" filled";
         if(sl.locked)cls+=" locked";
-        else if(opts.assist&&!done){const ok=cur.tiles[wi][sl.ti].ch===w[si];cls+=ok?" right":" wrong";state=ok?", right place":", wrong place"}}
+        else if(cur.assist&&!done){const ok=cur.tiles[wi][sl.ti].ch===w[si];cls+=ok?" right":" wrong";state=ok?", right place":", wrong place"}}
       b.className=cls;b.textContent=sl?cur.tiles[wi][sl.ti].ch:"";
       b.setAttribute("aria-label",sl?`${b.textContent}${state}`:"Empty");
       b.onclick=()=>unplace(wi,si);wa.appendChild(b);
@@ -491,7 +505,7 @@ function place(wi,ti){
   if(done||cur.tiles[wi][ti].used)return;
   const k=cur.slots[wi].indexOf(null);if(k<0)return;
   cur.tiles[wi][ti].used=true;cur.slots[wi][k]={ti,locked:false};
-  beep(opts.assist?(cur.tiles[wi][ti].ch===cur.words[wi][k]?660:300):480,.05,"triangle");buzz(8);
+  beep(cur.assist?(cur.tiles[wi][ti].ch===cur.words[wi][k]?660:300):480,.05,"triangle");buzz(8);
   $("msg").textContent="";render();check();
 }
 function unplace(wi,si){
@@ -502,6 +516,23 @@ function clearAll(){
   if(done)return;
   cur.slots.forEach((row,wi)=>row.forEach((sl,si)=>{if(sl&&!sl.locked){cur.tiles[wi][sl.ti].used=false;row[si]=null}}));
   $("msg").textContent="";render();
+}
+function toggleAssist(){
+  if(done)return;
+  cur.assist=!cur.assist;if(cur.assist)cur.assistUsed=true;
+  $("assistBtn").setAttribute("aria-pressed",String(cur.assist));
+  beep(cur.assist?660:420,.06);render();updPts();
+}
+function reshuffle(){
+  if(done)return;
+  cur.tiles.forEach(tiles=>{
+    const free=tiles.filter(t=>!t.used);if(free.length<2)return;
+    const chars=free.map(t=>t.ch),orig=chars.join("");
+    let mixed,n=0;do{mixed=shuffle(chars,Math.random);n++}while(mixed.join("")===orig&&new Set(chars).size>1&&n<20);
+    free.forEach((t,i)=>t.ch=mixed[i]);
+  });
+  beep(520,.05,"triangle");buzz(10);render();
+  const P=$("pool");P.classList.remove("reshuffle");void P.offsetWidth;P.classList.add("reshuffle");
 }
 function giveLetter(){
   if(done)return;
@@ -523,7 +554,7 @@ function check(){
     G.score+=pts;G.streak++;finish(true,`${cur.f.t}! +${pts}`,clean?"🟩":"🟨",pts);
     beep(660,.1);setTimeout(()=>beep(880,.16),90);buzz([15,40,25]);
   }else{
-    $("msg").textContent=opts.assist?"Move the red letters to fix it.":"Not quite. Tap letters to swap them around.";
+    $("msg").textContent=cur.assist?"Move the red letters to fix it.":"Not quite. Tap letters to swap them around.";
     $("msg").className="msg bad";
     const A=$("answer");A.classList.remove("shake");void A.offsetWidth;A.classList.add("shake");
     beep(180,.18,"sawtooth");buzz(60);
@@ -539,7 +570,7 @@ function finish(won,text,mark,pts){
   $("msg").textContent=text;$("msg").className="msg "+(won?"ok":"bad");
   $("score").textContent=G.score;$("streak").textContent=G.streak;
   cur.shown={actor:true,dir:true,year:true};renderClues();renderProgress();updPts();
-  ["actorBtn","dirBtn","yearBtn","letterBtn","clearBtn"].forEach(b=>$(b).disabled=true);
+  ["actorBtn","dirBtn","yearBtn","letterBtn","clearBtn","shuffleBtn","assistBtn"].forEach(b=>$(b).disabled=true);
   $("skipBtn").textContent=G.r+1<G.films.length?"Next film":"See result";
   $("skipBtn").focus({preventScroll:true});
 }
@@ -595,7 +626,6 @@ function renderStats(){
 /* wiring */
 $("dailyBtn").onclick=()=>newGame("daily");
 document.querySelectorAll(".level").forEach(b=>b.onclick=()=>newGame(b.dataset.mode));
-$("optAssist").onchange=e=>{opts.assist=e.target.checked;put("opts",opts)};
 $("optSound").onchange=e=>{opts.sound=e.target.checked;put("opts",opts);if(opts.sound)beep(660,.08)};
 $("howBtn").onclick=()=>openModal("howModal");
 $("howClose").onclick=()=>{closeModal("howModal");opts.seenHow=true;put("opts",opts)};
@@ -606,7 +636,7 @@ $("quitBtn").onclick=()=>{if(G&&G.r>0&&!confirm("Leave this game? Your progress 
 $("actorBtn").onclick=()=>clue("actor","actorBtn");
 $("dirBtn").onclick=()=>clue("dir","dirBtn");
 $("yearBtn").onclick=()=>clue("year","yearBtn");
-$("letterBtn").onclick=giveLetter;$("clearBtn").onclick=clearAll;$("skipBtn").onclick=next;
+$("letterBtn").onclick=giveLetter;$("shuffleBtn").onclick=reshuffle;$("assistBtn").onclick=toggleAssist;$("clearBtn").onclick=clearAll;$("skipBtn").onclick=next;
 $("copyBtn").onclick=copyResult;
 $("againBtn").onclick=()=>newGame(lastRes.mode==="daily"?"easy":lastRes.mode);
 $("homeBtn2").onclick=()=>{refreshHome();show("home")};
